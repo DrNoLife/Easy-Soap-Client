@@ -10,6 +10,7 @@
     <Description>A .NET library for interacting with SOAP services using a repository pattern.</Description>
     <PackageTags>soap</PackageTags>
     <PackageReadmeFile>README.md</PackageReadmeFile>
+    <Version>$(VersionPrefix)1.0.1</Version>
   </PropertyGroup>
 
   <ItemGroup>
