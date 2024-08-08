@@ -4,6 +4,11 @@
     <TargetFramework>net8.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+    <Title>Easy Soap Client</Title>
+    <Authors>Thor Christiansen</Authors>
+    <Description>A .NET library for interacting with SOAP services using a repository pattern.</Description>
+    <PackageTags>soap</PackageTags>
   </PropertyGroup>
 
   <ItemGroup>

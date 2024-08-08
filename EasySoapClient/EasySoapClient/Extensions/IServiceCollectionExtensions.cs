@@ -9,5 +9,5 @@ public static class IServiceCollectionExtensions
     public static void AddEasySoapClient(this IServiceCollection services)
     {
         services.AddTransient<IRepositoryFactory, RepositoryFactory>();
-    };
+    }
 }
