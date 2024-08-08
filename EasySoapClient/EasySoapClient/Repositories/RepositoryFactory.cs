@@ -12,7 +12,7 @@ public class RepositoryFactory : IRepositoryFactory
         _httpClientFactory = httpClientFactory;
     }
 
-    public IRepository<T> CreateRepository<T>(string webserviceUrl, ICredentialsProvider credentials) where T : IWebServiceElement, new()
+    public IRepository<T> CreateRepository<T>(Uri webserviceUrl, ICredentialsProvider credentials) where T : IWebServiceElement, new()
     {
         return new Repository<T>(_httpClientFactory, credentials, webserviceUrl);
     }
