@@ -1,20 +1,16 @@
 ﻿using EasySoapClient.Interfaces;
-using System.Net.Http;
 
 namespace EasySoapClient.Repositories;
 
-public class RepositoryFactory : IRepositoryFactory
+public class RepositoryFactory(IHttpClientFactory httpClientFactory, ISoapEnvelopeService soapEnvelopeService) : IRepositoryFactory
 {
-    private readonly IHttpClientFactory _httpClientFactory;
+    private readonly IHttpClientFactory _httpClientFactory = httpClientFactory;
+    private readonly ISoapEnvelopeService _soapEnvelopeService = soapEnvelopeService;
 
-    public RepositoryFactory(IHttpClientFactory httpClientFactory)
+    public IRepository<T> CreateRepository<T>(Uri webserviceUrl, ICredentialsProvider credentials) 
+        where T : IWebServiceElement, new()
     {
-        _httpClientFactory = httpClientFactory;
-    }
-
-    public IRepository<T> CreateRepository<T>(Uri webserviceUrl, ICredentialsProvider credentials) where T : IWebServiceElement, new()
-    {
-        return new Repository<T>(_httpClientFactory, credentials, webserviceUrl);
+        return new Repository<T>(_httpClientFactory, credentials, webserviceUrl, _soapEnvelopeService);
     }
 }
 

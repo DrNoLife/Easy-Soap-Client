@@ -2,5 +2,6 @@
 
 public enum CallMethod
 {
-    ReadMultiple
+    ReadMultiple,
+    Create
 }

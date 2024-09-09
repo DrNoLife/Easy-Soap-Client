@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.11.35017.193
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EasySoapClient", "EasySoapClient\EasySoapClient.csproj", "{36D58E2E-AB9A-46A2-BF61-8973328CF06A}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EasySoapClient", "EasySoapClient\EasySoapClient.csproj", "{36D58E2E-AB9A-46A2-BF61-8973328CF06A}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
