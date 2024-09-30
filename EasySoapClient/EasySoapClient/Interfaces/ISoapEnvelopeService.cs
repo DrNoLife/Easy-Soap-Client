@@ -4,6 +4,6 @@ namespace EasySoapClient.Interfaces;
 
 public interface ISoapEnvelopeService
 {
-    string CreateReadMultipleEnvelope<T>(ReadMultipleFilter filter, T serviceElement) where T : IWebServiceElement;
+    string CreateReadMultipleEnvelope<T>(IEnumerable<ReadMultipleFilter> filters, int size, string? bookmarkKey, T serviceElement) where T : IWebServiceElement;
     string CreateCreateEnvelope<T>(T item) where T : IWebServiceElement;
 }

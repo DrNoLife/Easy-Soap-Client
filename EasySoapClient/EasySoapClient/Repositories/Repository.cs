@@ -25,9 +25,9 @@ public class Repository<T>(
     private string Credentials => _credentials.GenerateBase64Credentials();
     protected virtual string ServiceUrl => $"{_serviceUrl}/Page/{_instance.ServiceName}";
 
-    public virtual async Task<List<T>> ReadMultipleAsync(ReadMultipleFilter filter)
+    public virtual async Task<List<T>> ReadMultipleAsync(IEnumerable<ReadMultipleFilter> filters, int size = 10, string? bookmarkKey = null)
     {
-        string soapMessage = _soapEnvelopeService.CreateReadMultipleEnvelope(filter, _instance);
+        string soapMessage = _soapEnvelopeService.CreateReadMultipleEnvelope(filters, size, bookmarkKey, _instance);
         string soapResponse = await SendSoapRequestAsync(CallMethod.ReadMultiple, soapMessage);
 
         // Parse response as a list.
@@ -73,9 +73,10 @@ public class Repository<T>(
         // Extract the specified elements.
         var elements = xmlDoc.Descendants(ns + _instance.ServiceName);
 
+        // If no items found, just return an empty list.
         if (!elements.Any())
         {
-            throw new InvalidOperationException("No valid elements found in the SOAP response.");
+            return [];
         }
 
         // Deserialize each element to an object of type T.
@@ -99,7 +100,8 @@ public class Repository<T>(
         XNamespace ns = _instance.Namespace;
 
         // Extract a single element.
-        var singleElement = xmlDoc.Descendants(ns + _instance.ServiceName).FirstOrDefault() ?? throw new InvalidOperationException("No valid element found in the SOAP response.");
+        var singleElement = xmlDoc.Descendants(ns + _instance.ServiceName).FirstOrDefault() 
+            ?? throw new InvalidOperationException("No valid element found in the SOAP response." + result);
 
         // Deserialize the single element to an object of type T.
         XmlSerializer serializer = new(typeof(T), new XmlRootAttribute(_instance.ServiceName) { Namespace = _instance.Namespace });

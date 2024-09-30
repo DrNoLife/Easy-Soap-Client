@@ -134,8 +134,12 @@ else
         Uri webserviceUri = new("<WEBSERVICE_URI_HERE>");
         Credentials credentials = new("<USERNAME>", "<PASSWORD>");
         var repo = RepositoryFactory.CreateRepository<MachineModel>(webserviceUri, credentials);
-        ReadMultipleFilter filter = new("Machine", "*", 15);
-        _machines = await repo.ReadMultipleAsync(filter);
+        ReadMultipleFilter filter = new("Machine", "This|*or th*", 15);
+
+        // New feature, can use multiple filters.
+        ReadMultipleFilter filter2 = new("Active", "true");
+
+        _machines = await repo.ReadMultipleAsync([filter, filter2]);
     }
 }
 ```

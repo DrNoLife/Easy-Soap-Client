@@ -8,32 +8,43 @@ namespace EasySoapClient.Services;
 
 public class SoapEnvelopeService : ISoapEnvelopeService
 {
-    public virtual string CreateReadMultipleEnvelope<T>(ReadMultipleFilter filter, T serviceElement) where T : IWebServiceElement
+    public virtual string CreateReadMultipleEnvelope<T>(IEnumerable<ReadMultipleFilter> filters, int size, string? bookmarkKey, T serviceElement) where T : IWebServiceElement
     {
         var soapMessage = new StringBuilder();
-        soapMessage.Append($@"
-            <soapenv:Envelope xmlns:soapenv=""http://schemas.xmlsoap.org/soap/envelope/"" xmlns:wsns=""{serviceElement.Namespace}"">
-                <soapenv:Header/>
-                <soapenv:Body>
-                    <wsns:ReadMultiple>
-                        <wsns:filter>
-                            <wsns:Field>{filter.Field}</wsns:Field>
-                            <wsns:Criteria>{filter.Criteria}</wsns:Criteria>
-                        </wsns:filter>
-                        <wsns:setSize>{filter.Size}</wsns:setSize>");
 
-        if (!String.IsNullOrEmpty(filter.BookmarkKey))
+        soapMessage.Append($@"
+        <soapenv:Envelope xmlns:soapenv=""http://schemas.xmlsoap.org/soap/envelope/"" xmlns:wsns=""{serviceElement.Namespace}"">
+            <soapenv:Header/>
+            <soapenv:Body>
+                <wsns:ReadMultiple>");
+
+        // Append each filter
+        foreach (var filter in filters)
         {
-            soapMessage.Append($@"<wsns:bookmarkKey>{filter.BookmarkKey}</wsns:bookmarkKey>");
+            soapMessage.Append($@"
+                    <wsns:filter>
+                        <wsns:Field>{filter.Field}</wsns:Field>
+                        <wsns:Criteria>{filter.Criteria}</wsns:Criteria>
+                    </wsns:filter>");
+        }
+
+        // Add size and bookmarkKey
+        soapMessage.Append($@"
+                    <wsns:setSize>{size}</wsns:setSize>");
+
+        if (!String.IsNullOrEmpty(bookmarkKey))
+        {
+            soapMessage.Append($@"<wsns:bookmarkKey>{bookmarkKey}</wsns:bookmarkKey>");
         }
 
         soapMessage.Append(@"
-                    </wsns:ReadMultiple>
-                </soapenv:Body>
-            </soapenv:Envelope>");
+                </wsns:ReadMultiple>
+            </soapenv:Body>
+        </soapenv:Envelope>");
 
         return soapMessage.ToString();
     }
+
 
     public virtual string CreateCreateEnvelope<T>(T item) where T : IWebServiceElement
     {

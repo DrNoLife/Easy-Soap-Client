@@ -1,34 +1,9 @@
 ﻿namespace EasySoapClient.Models;
 
 
-public struct ReadMultipleFilter
+public struct ReadMultipleFilter(string field, string criteria)
 {
-    public string Field { get; set; }
-    public string Criteria { get; set; }
-    public string? BookmarkKey { get; set; }
-    public int Size { get; set; }
-
-    public ReadMultipleFilter(string field, string criteria, string bookmarkKey, int size)
-    {
-        Field = field;
-        Criteria = criteria;
-        BookmarkKey = bookmarkKey;
-        Size = size;
-    }
-
-    public ReadMultipleFilter(string field, string criteria, int size)
-    {
-        Field = field;
-        Criteria = criteria;
-        BookmarkKey = String.Empty;
-        Size = size;
-    }
-
-    public ReadMultipleFilter(string field, string criteria)
-    {
-        Field = field;
-        Criteria = criteria;
-        BookmarkKey = String.Empty;
-        Size = 10;
-    }
+    public string Field { get; set; } = field;
+    public string Criteria { get; set; } = criteria;
 }
+
