@@ -1,36 +1,47 @@
 # Easy-Soap-Client
 Project for talking with SOAP web services, without using a Visual Studio auto-generated proxy
 
+## NOTICE! 
+
+As of version 2.0, some breaking changes has happened.
+
+I decided to move away from the previous approach, of creating a repository for a specific model. I realized this was very limiting (worked fine, in the start when I was just retrieving data, but as more action became needed, it was more and more limiting).
+
+Reason being, the previous approach forced you to create a new repository for reading. A new repository for creating. A new repository for updating... All regarding the same endpoint.
+
+In the new version you still need to create models which implement the ```IWebServiceElement``` and now also the ```IUpdatableWebServiceElement``` if you want to use the update method. However, you only need to inject the new service, and use the provided methods. No need to initialize an entire new object just for calling that specific element.
+
+The rest of the documentation has also been updated. If you need the old version, see the commit history on the GitHub repository.
+
+
 ## How to use
 
-Supports Dependency Injection, so to make use of it, add the ```RepositoryFactory``` to the service collection by using either one of these options:
+Setup the library by adding it to the ```IServiceCollection``` by doing the following:
 
 ```csharp
-builder.Services.AddEasySoapClient();
+builder.Services.AddEasySoapClient(options =>
+{
+    options.Username = builder.Configuration["Navision:Username"] 
+        ?? throw new Exception("Failed to get the 'Username' for Navision from appsettings.json.");
+
+    options.Password = builder.Configuration["Navision:Password"] 
+        ?? throw new Exception("Failed to get the 'Password' for Navision from appsettings.json.");
+
+    options.BaseUri = builder.Configuration["Navision:BaseUri"] 
+        ?? throw new Exception("Failed to get the 'BaseUri' for Navision from appsettings.json.");
+});
 ```
 
-```csharp
-builder.Services.AddTransient<IRepositoryFactory, RepositoryFactory>()
-```
+*Note: Since 2.0, there is no need to manually add the HttpClient, as the libraary also adds this.*
 
-After doing this, you can inject the factory into your own codebase. Then you need to supply a ```Uri``` for the webservice, this is the base uri for your navision web service, example:
+### BaseUri
 
-You might have a URL which looks like this: ```https://<domain>/WEBSERVICE/WS/<company>/Pages/WebServiceNameHere``` 
+You need to provide a ```BaseUri```.  
+You might have a webservice which is located at the following Url ```https://<domain>/WEBSERVICE/WS/<company>/Pages/WebServiceNameHere```  
 What we need from this is this piece: ```https://<domain>/WEBSERVICE/WS/<company>``` 
 
-After that, you also need to pass in the credentials for the webservice. This is using Basic Auth, meaning username password. To do so, make use of ```ICredentialsProvider``` and the implementation ```Credentials```.
 
-```csharp
-Credentials credentials = new("username", "password");
-```
-
-After that, combine it together and you can access your newly build repository.
-
-```csharp
-var repo = RepositoryFactory.CreateRepository<T>(webserviceUri, credentials);
-```
-
-## Create custom models for repository
+## Create custom models 
 
 This project works by creating models which defines namespace, service name, and describes which properties to get data from, from the web service.
 
@@ -65,81 +76,91 @@ This newly build class, is what is used as type parameter for your repositories.
 Filter the data you get by using the ```ReadMultipleFilter``` struct. Example:
 
 ```csharp
-ReadMultipleFilter filter = new("ObjectId", "> 100", 20);
+ReadMultipleFilter filter = new("ObjectId", "> 100");
 ```
 
-Which should filter by webservice property ObjectId, and retrieve the first 20 elements that are above 100. 
+Which should filter by webservice property ObjectId.
+
+*Note: Filters only specify by what parameters we want to retrieve data, not how much data is retrieved. That is done later when calling the method.*
 
 ## Complete code example:
 
-I createed the following example in Blazor, so take that in mind.
+Following code example is a rough and dirty way of retrieving an element, updating it, and then retrieving the element again to see that it has indeed been updated.
 
 Program.cs
 ```csharp
-builder.Services.AddHttpClient();
-builder.Services.AddEasySoapClient();
+builder.Services.AddEasySoapClient(options =>
+{
+    options.Username = builder.Configuration["Navision:Username"] 
+        ?? throw new Exception("Failed to get the 'Username' for Navision from appsettings.json.");
+
+    options.Password = builder.Configuration["Navision:Password"] 
+        ?? throw new Exception("Failed to get the 'Password' for Navision from appsettings.json.");
+
+    options.BaseUri = builder.Configuration["Navision:BaseUri"] 
+        ?? throw new Exception("Failed to get the 'BaseUri' for Navision from appsettings.json.");
+});
 ```
 
-Models/MachineModel.cs
+Models/NavisionDocumentModel.cs
 ```csharp
-public class MachineModel : IWebServiceElement
+public class NavisionDocumentModel : IWebServiceElement
 {
-    public string ServiceName => "Machines";
-    public string Namespace => "urn:microsoft-dynamics-schemas/page/machines";
-
+    public string ServiceName => "ItemDocuments";
+    public string Namespace => "urn:microsoft-dynamics-schemas/page/itemdocuments";
 
     [XmlElement(ElementName = "Key")]
     public string Key { get; set; } = String.Empty;
 
-    [XmlElement(ElementName = "Machine_Name")]
-    public string Machine { get; set; } = String.Empty;
+    [XmlElement(ElementName = "Tabel_ID")]
+    public string TableId { get; set; } = String.Empty;
 
-    public override string ToString()
-    {
-        return $"{Machine} [{Key}]";
-    }
+    [XmlElement(ElementName = "IsControlled")]
+    public bool IsControlled { get; set; }
 }
 ```
 
-Components/NavisionComponent.cs
+Models/UpdateDocumentModel
 ```csharp
-@using EasySoapClient.Interfaces
-@using BlazorApp1.Models
-@using EasySoapClient.Models
+public class UpdateDocumentModel : IUpdatableWebServiceElement
+{
+    public string ServiceName => "ItemDocuments";
+    public string Namespace => "urn:microsoft-dynamics-schemas/page/itemdocuments";
 
-@if (_machines is null)
-{
-    <p>Loading</p>
+    [XmlElement(ElementName = "Key")]
+    public string Key { get; set; } = String.Empty;
+
+    [XmlElement(ElementName = "IsControlled")]
+    public bool IsControlled { get; set; }
 }
-else if (_machines.Count == 0)
+```
+
+*Note: The key here is used by Navision as the Primary Key, to decide what element to update. The library generates a soap envelope based on the [XmlElement] properties you add to the class.*
+
+Worker.cs
+```csharp
+public class Worker(ILogger<Worker> logger, IEasySoapService soapService) : BackgroundService
 {
-    <p>No results</p>
-}
-else
-{
-    @foreach(var machine in _machines)
+    private readonly ILogger<Worker> _logger = logger;
+    private readonly IEasySoapService _soapService = soapService;
+
+    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        <p>@machine.Machine</p>
-    }
-}
+        ReadMultipleFilter filter = new("Tabel_ID", "27");
 
-@code {
-    [Inject]
-    public IRepositoryFactory RepositoryFactory { get; set; } = default!;
+        var beforeEdit = await _soapService.GetAsync<NavisionDocumentModel>([filter], 1);
+        _logger.LogInformation("{DocumentKey} - has been controlled {IsControlled}", beforeEdit.First().Key, beforeEdit.First().IsControlled);
 
-    List<MachineModel>? _machines;
+        // Edit.
+        UpdateDocumentModel item = new()
+        {
+            Key = beforeEdit.First().Key,
+            IsControlled = !beforeEdit.First().IsControlled,
+        };
+        _ = await _soapService.UpdateAsync(item);
 
-    protected override async Task OnInitializedAsync()
-    {
-        Uri webserviceUri = new("<WEBSERVICE_URI_HERE>");
-        Credentials credentials = new("<USERNAME>", "<PASSWORD>");
-        var repo = RepositoryFactory.CreateRepository<MachineModel>(webserviceUri, credentials);
-        ReadMultipleFilter filter = new("Machine", "This|*or th*", 15);
-
-        // New feature, can use multiple filters.
-        ReadMultipleFilter filter2 = new("Active", "true");
-
-        _machines = await repo.ReadMultipleAsync([filter, filter2]);
+        var afterEdit = await _soapService.GetAsync<NavisionDocumentModel>([filter], 1);
+        _logger.LogInformation("{DocumentKey} - has been controlled {IsControlled}", afterEdit.First().Key, afterEdit.First().IsControlled);
     }
 }
 ```

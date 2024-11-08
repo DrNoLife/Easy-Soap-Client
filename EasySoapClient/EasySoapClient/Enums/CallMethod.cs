@@ -3,5 +3,6 @@
 public enum CallMethod
 {
     ReadMultiple,
-    Create
+    Create,
+    Update
 }
