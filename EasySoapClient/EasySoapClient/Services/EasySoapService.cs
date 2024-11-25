@@ -3,7 +3,6 @@ using EasySoapClient.Interfaces;
 using EasySoapClient.Models;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using System.Diagnostics;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Xml.Linq;
@@ -26,32 +25,32 @@ public class EasySoapService(
 
     private string Credentials => _credentials.GenerateBase64Credentials();
 
-    public async Task<List<T>> GetAsync<T>(IEnumerable<ReadMultipleFilter> filters, int size = 10, string? bookmarkKey = null) where T : IWebServiceElement, new()
+    public async Task<List<T>> GetAsync<T>(IEnumerable<ReadMultipleFilter> filters, int size = 10, string? bookmarkKey = null, CancellationToken cancellationToken = default) where T : IWebServiceElement, new()
     {
         var instance = new T();
         string serviceUrl = $"{_serviceUrl}/Page/{instance.ServiceName}";
         string soapMessage = _soapEnvelopeService.CreateReadMultipleEnvelope(filters, size, null, instance);
-        string soapResponse = await SendSoapRequestAsync(CallMethod.ReadMultiple, soapMessage, instance, serviceUrl);
+        string soapResponse = await SendSoapRequestAsync(CallMethod.ReadMultiple, soapMessage, instance, serviceUrl, cancellationToken);
 
         return ParseSoapResponseList<T>(soapResponse, instance);
     }
 
-    public async Task<T> CreateAsync<T>(T item) where T : IWebServiceElement, new()
+    public async Task<T> CreateAsync<T>(T item, CancellationToken cancellationToken = default) where T : IWebServiceElement, new()
     {
         var instance = item;
         string serviceUrl = $"{_serviceUrl}/Page/{instance.ServiceName}";
         string soapMessage = _soapEnvelopeService.CreateCreateEnvelope(item);
-        string soapResponse = await SendSoapRequestAsync(CallMethod.Create, soapMessage, instance, serviceUrl);
+        string soapResponse = await SendSoapRequestAsync(CallMethod.Create, soapMessage, instance, serviceUrl, cancellationToken);
 
         return ParseSoapResponseSingle<T>(soapResponse, instance);
     }
 
-    public async Task<T> UpdateAsync<T>(T item) where T : IUpdatableWebServiceElement, new()
+    public async Task<T> UpdateAsync<T>(T item, CancellationToken cancellationToken = default) where T : IUpdatableWebServiceElement, new()
     {
         var instance = item;
         string serviceUrl = $"{_serviceUrl}/Page/{instance.ServiceName}";
         string soapMessage = _soapEnvelopeService.CreateUpdateEnvelope(item);
-        string soapResponse = await SendSoapRequestAsync(CallMethod.Update, soapMessage, instance, serviceUrl);
+        string soapResponse = await SendSoapRequestAsync(CallMethod.Update, soapMessage, instance, serviceUrl, cancellationToken);
 
         return ParseSoapResponseSingle<T>(soapResponse, instance);
     }
@@ -59,7 +58,7 @@ public class EasySoapService(
     private static string GetSoapAction(CallMethod methodToCall, IWebServiceElement instance)
         => $"{instance.Namespace}/{methodToCall}";
 
-    private async Task<string> SendSoapRequestAsync(CallMethod soapMethod, string soapEnvelope, IWebServiceElement instance, string serviceUrl)
+    private async Task<string> SendSoapRequestAsync(CallMethod soapMethod, string soapEnvelope, IWebServiceElement instance, string serviceUrl, CancellationToken cancellationToken = default)
     {
         using var httpClient = _httpClientFactory.CreateClient();
         var content = new StringContent(soapEnvelope, Encoding.UTF8, "text/xml");
@@ -67,17 +66,17 @@ public class EasySoapService(
         content.Headers.Add("SOAPAction", GetSoapAction(soapMethod, instance));
         httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", Credentials);
 
-        HttpResponseMessage response = await httpClient.PostAsync(serviceUrl, content);
+        HttpResponseMessage response = await httpClient.PostAsync(serviceUrl, content, cancellationToken);
 
         _logger.LogDebug("Response from WebService: ({StatusCode}) {ReasonPhrase}", response.StatusCode, response.ReasonPhrase);
 
         response.EnsureSuccessStatusCode(); 
-        string result = await response.Content.ReadAsStringAsync();
+        string result = await response.Content.ReadAsStringAsync(cancellationToken);
 
         return result;
     }
 
-    private List<T> ParseSoapResponseList<T>(string result, IWebServiceElement instance) where T : IWebServiceElement, new()
+    private static List<T> ParseSoapResponseList<T>(string result, IWebServiceElement instance) where T : IWebServiceElement, new()
     {
         XDocument xmlDoc = XDocument.Parse(result);
         XNamespace ns = instance.Namespace;
@@ -102,7 +101,7 @@ public class EasySoapService(
         return list;
     }
 
-    private T ParseSoapResponseSingle<T>(string result, IWebServiceElement instance) where T : IWebServiceElement, new()
+    private static T ParseSoapResponseSingle<T>(string result, IWebServiceElement instance) where T : IWebServiceElement, new()
     {
         XDocument xmlDoc = XDocument.Parse(result);
         XNamespace ns = instance.Namespace;
