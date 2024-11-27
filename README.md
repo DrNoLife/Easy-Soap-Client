@@ -172,14 +172,14 @@ It is now possible to use keyed services, to make sure one can work with multipl
 You can register it as a keyed instance using the new ```AddKeyedEasySoapClient``` method.
 
 ```csharp
-builder.Services.AddKeyedEasySoapClient("FiprosAS", options =>
+builder.Services.AddKeyedEasySoapClient("CompanyNameA", options =>
 {
     options.Username = builder.Configuration["Navision:CompanyNameA:Username"]!;
     options.Password = builder.Configuration["Navision:CompanyNameA:Password"]!;
     options.BaseUri = builder.Configuration["Navision:CompanyNameA:WebServiceLink"]!;
 });
 
-builder.Services.AddKeyedEasySoapClient("FiprosNutrition", options =>
+builder.Services.AddKeyedEasySoapClient("CompanyNameB", options =>
 {
     options.Username = builder.Configuration["Navision:CompanyNameB:Username"]!;
     options.Password = builder.Configuration["Navision:CompanyNameB:Password"]!;
