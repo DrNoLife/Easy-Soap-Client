@@ -164,3 +164,38 @@ public class Worker(ILogger<Worker> logger, IEasySoapService soapService) : Back
     }
 }
 ```
+
+## Keyed Services
+
+It is now possible to use keyed services, to make sure one can work with multiple navision instances.
+
+You can register it as a keyed instance using the new ```AddKeyedEasySoapClient``` method.
+
+```csharp
+builder.Services.AddKeyedEasySoapClient("FiprosAS", options =>
+{
+    options.Username = builder.Configuration["Navision:CompanyNameA:Username"]!;
+    options.Password = builder.Configuration["Navision:CompanyNameA:Password"]!;
+    options.BaseUri = builder.Configuration["Navision:CompanyNameA:WebServiceLink"]!;
+});
+
+builder.Services.AddKeyedEasySoapClient("FiprosNutrition", options =>
+{
+    options.Username = builder.Configuration["Navision:CompanyNameB:Username"]!;
+    options.Password = builder.Configuration["Navision:CompanyNameB:Password"]!;
+    options.BaseUri = builder.Configuration["Navision:CompanyNameB:WebServiceLink"]!;
+});
+```
+
+After that, you can handle the dependency injection like this:
+
+```csharp
+public class Worker(
+    [FromKeyedServices("CompanyNameA")] IEasySoapService easySoapCompanyA,
+    [FromKeyedServices("CompanyNameB")] IEasySoapService easySoapCompanyB) 
+{
+
+}
+```
+
+The library supports using either Keyed services, or non-keyed services. You can also mix and match the two in a project.

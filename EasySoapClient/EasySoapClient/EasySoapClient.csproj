@@ -7,10 +7,10 @@
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
     <Title>Easy Soap Client</Title>
     <Authors>Thor Christiansen</Authors>
-    <Description>A .NET library for interacting with SOAP services using a repository pattern.</Description>
+    <Description>A .NET library for interacting with SOAP services.</Description>
     <PackageTags>soap</PackageTags>
     <PackageReadmeFile>README.md</PackageReadmeFile>
-    <Version>$(VersionPrefix)2.0.1</Version>
+    <Version>$(VersionPrefix)2.0.2</Version>
   </PropertyGroup>
 
   <ItemGroup>

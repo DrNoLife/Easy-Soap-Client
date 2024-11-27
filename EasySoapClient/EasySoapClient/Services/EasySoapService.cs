@@ -1,6 +1,7 @@
 ﻿using EasySoapClient.Enums;
 using EasySoapClient.Interfaces;
 using EasySoapClient.Models;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using System.Net.Http.Headers;
@@ -10,18 +11,37 @@ using System.Xml.Serialization;
 
 namespace EasySoapClient.Services;
 
-public class EasySoapService(
-    IHttpClientFactory httpClientFactory,
-    ISoapEnvelopeService soapEnvelopeService,
-    ICredentialsProvider credentials,
-    ILogger<EasySoapService> logger,
-    IOptions<EasySoapClientOptions> options) : IEasySoapService
+public class EasySoapService : IEasySoapService
 {
-    private readonly IHttpClientFactory _httpClientFactory = httpClientFactory;
-    private readonly ISoapEnvelopeService _soapEnvelopeService = soapEnvelopeService;
-    private readonly ICredentialsProvider _credentials = credentials;
-    private readonly Uri _serviceUrl = new(options.Value.BaseUri);
-    private readonly ILogger<EasySoapService> _logger = logger;  
+    private readonly IHttpClientFactory _httpClientFactory;
+    private readonly ISoapEnvelopeService _soapEnvelopeService;
+    private readonly ICredentialsProvider _credentials;
+    private readonly Uri _serviceUrl;
+    private readonly ILogger<EasySoapService> _logger;
+
+    public EasySoapService(
+        IHttpClientFactory httpClientFactory,
+        ISoapEnvelopeService soapEnvelopeService,
+        ILogger<EasySoapService> logger,
+        IOptionsMonitor<EasySoapClientOptions> optionsMonitor,
+        IServiceProvider serviceProvider,
+        [ServiceKey] string? serviceKey = null)
+    {
+        _httpClientFactory = httpClientFactory;
+        _soapEnvelopeService = soapEnvelopeService;
+        _logger = logger;
+
+        var options = serviceKey is not null
+            ? optionsMonitor.Get(serviceKey) // Keyed configuration.
+            : optionsMonitor.CurrentValue;   // Non-keyed (default) configuration.
+
+        _serviceUrl = new Uri(options.BaseUri);
+
+        // Resolve the correct credentials provider.
+        _credentials = serviceKey is not null
+            ? serviceProvider.GetRequiredKeyedService<ICredentialsProvider>(serviceKey) 
+            : serviceProvider.GetRequiredService<ICredentialsProvider>();              
+    }
 
     private string Credentials => _credentials.GenerateBase64Credentials();
 
