@@ -1,4 +1,5 @@
 ﻿using EasySoapClient.Enums;
+using EasySoapClient.Exceptions;
 using EasySoapClient.Interfaces;
 using EasySoapClient.Models;
 using Microsoft.Extensions.DependencyInjection;
@@ -90,10 +91,16 @@ public class EasySoapService : IEasySoapService
 
         _logger.LogDebug("Response from WebService: ({StatusCode}) {ReasonPhrase}", response.StatusCode, response.ReasonPhrase);
 
-        response.EnsureSuccessStatusCode(); 
-        string result = await response.Content.ReadAsStringAsync(cancellationToken);
+        if (!response.IsSuccessStatusCode)
+        {
+            string errorContent = await response.Content.ReadAsStringAsync(cancellationToken);
+            throw new SoapRequestException(
+                $"HTTP Error: {response.StatusCode}. Details: {errorContent}",
+                errorContent,
+                soapEnvelope);
+        }
 
-        return result;
+        return await response.Content.ReadAsStringAsync(cancellationToken);
     }
 
     private static List<T> ParseSoapResponseList<T>(string result, IWebServiceElement instance) where T : IWebServiceElement, new()
