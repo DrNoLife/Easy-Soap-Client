@@ -46,8 +46,14 @@ public class EasySoapService : IEasySoapService
 
     private string Credentials => _credentials.GenerateBase64Credentials();
 
-    public async Task<List<T>> GetAsync<T>(IEnumerable<ReadMultipleFilter> filters, int size = 10, string? bookmarkKey = null, CancellationToken cancellationToken = default) where T : IWebServiceElement, new()
+    public async Task<List<T>> GetAsync<T>(IEnumerable<ReadMultipleFilter>? filters = null, int size = 10, string? bookmarkKey = null, CancellationToken cancellationToken = default) where T : IWebServiceElement, new()
     {
+        if (filters is null || !filters.Any())
+        {
+            ReadMultipleFilter emptyReadAllFilter = new("", "");
+            filters = [emptyReadAllFilter];
+        }
+
         var instance = new T();
         string serviceUrl = $"{_serviceUrl}/Page/{instance.ServiceName}";
         string soapMessage = _soapEnvelopeService.CreateReadMultipleEnvelope(filters, size, null, instance);
@@ -55,6 +61,13 @@ public class EasySoapService : IEasySoapService
 
         return ParseSoapResponseList<T>(soapResponse, instance);
     }
+
+    public async Task<List<T>> GetAsync<T>(ReadMultipleFilter filter, int size = 10, string? bookmarkKey = null, CancellationToken cancellationToken = default) where T : IWebServiceElement, new()
+        => await GetAsync<T>(
+            filters: [filter],
+            size: size,
+            bookmarkKey: bookmarkKey,
+            cancellationToken: cancellationToken);
 
     public async Task<T> CreateAsync<T>(T item, CancellationToken cancellationToken = default) where T : IWebServiceElement, new()
     {
