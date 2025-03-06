@@ -199,3 +199,32 @@ public class Worker(
 ```
 
 The library supports using either Keyed services, or non-keyed services. You can also mix and match the two in a project.
+
+## Codeunits
+
+As of version 2.2.0 one can now call code units using the library.
+
+To do so, construct a ```CodeUnitRequest``` and then call the new ```CallCodeUnitAsync``` method on the ```IEasySoapService``` interface.
+
+One can create the ```CodeUnitRequest``` either using a  constructor approach, or using the provided ```CodeUnitRequestBuilder```.
+
+```csharp
+CodeUnitRequest request = CodeUnitRequest.CreateRequest(
+    "CodeUnitName",
+    "NameOfFunctionToBeInvoked",
+    new CodeUnitParameter("ParameterName", "ParameterValue"));
+```
+
+```csharp
+CodeUnitRequest request = CodeUnitRequestBuilder
+    .WithCodeUnit("CodeUnitName")
+    .WithMethod("NameOfFunctionToBeInvoked")
+    .AddParameter("ParameterName", "ParameterValue")
+    .Build();
+```
+
+Then call it like this.
+
+```csharp
+CodeUnitResponse response = await _easySoapService.CallCodeUnitAsync(request, stoppingToken);
+```
