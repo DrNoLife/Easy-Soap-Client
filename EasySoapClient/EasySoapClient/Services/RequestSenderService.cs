@@ -46,9 +46,9 @@ public class RequestSenderService : IRequestSenderService
         string serviceUrl = $"{_serviceUrl}/Page/{instance.ServiceName}";
 
         using var httpClient = _httpClientFactory.CreateClient();
-        var content = new StringContent(soapEnvelope, Encoding.UTF8, "text/xml");
+        StringContent content = new(soapEnvelope, Encoding.UTF8, "text/xml");
 
-        content.Headers.Add("SOAPAction", GetSoapAction(soapMethod, instance));
+        content.Headers.Add("SOAPAction", GetSoapWebServiceAction(soapMethod, instance));
         httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", Credentials);
 
         HttpResponseMessage response = await httpClient.PostAsync(serviceUrl, content, cancellationToken);
@@ -67,6 +67,6 @@ public class RequestSenderService : IRequestSenderService
         return await response.Content.ReadAsStringAsync(cancellationToken);
     }
 
-    private static string GetSoapAction(CallMethod methodToCall, IWebServiceElement instance)
+    private static string GetSoapWebServiceAction(CallMethod methodToCall, IWebServiceElement instance)
         => $"{instance.Namespace}/{methodToCall}";
 }

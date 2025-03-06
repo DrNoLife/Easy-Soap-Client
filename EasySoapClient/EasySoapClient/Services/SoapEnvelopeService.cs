@@ -10,11 +10,12 @@ namespace EasySoapClient.Services;
 
 public class SoapEnvelopeService(ILogger<SoapEnvelopeService> logger) : ISoapEnvelopeService
 {
-    private ILogger<SoapEnvelopeService> _logger = logger;
+    private readonly ILogger<SoapEnvelopeService> _logger = logger;
 
-    public virtual string CreateReadMultipleEnvelope<T>(IEnumerable<ReadMultipleFilter> filters, int size, string? bookmarkKey, T serviceElement) where T : IWebServiceElement
+    public virtual string CreateReadMultipleEnvelope<T>(IEnumerable<ReadMultipleFilter> filters, int size, string? bookmarkKey, T serviceElement) 
+        where T : IWebServiceElement
     {
-        var soapMessage = new StringBuilder();
+        StringBuilder soapMessage = new();
 
         soapMessage.Append($@"
         <soapenv:Envelope xmlns:soapenv=""http://schemas.xmlsoap.org/soap/envelope/"" xmlns:wsns=""{serviceElement.Namespace}"">
@@ -51,7 +52,8 @@ public class SoapEnvelopeService(ILogger<SoapEnvelopeService> logger) : ISoapEnv
         return soapMessage.ToString();
     }
 
-    public virtual string CreateCreateEnvelope<T>(T item) where T : IWebServiceElement
+    public virtual string CreateCreateEnvelope<T>(T item) 
+        where T : IWebServiceElement
     {
         StringBuilder soapMessage = new();
         soapMessage.Append($@"
@@ -102,7 +104,8 @@ public class SoapEnvelopeService(ILogger<SoapEnvelopeService> logger) : ISoapEnv
         return soapMessage.ToString();
     }
 
-    public virtual string CreateUpdateEnvelope<T>(T item) where T : IUpdatableWebServiceElement
+    public virtual string CreateUpdateEnvelope<T>(T item) 
+        where T : IUpdatableWebServiceElement
     {
         if (String.IsNullOrEmpty(item.Key))
         {
@@ -144,7 +147,7 @@ public class SoapEnvelopeService(ILogger<SoapEnvelopeService> logger) : ISoapEnv
             }
 
             // Append the element to the soap message, formatting value as string if necessary
-            soapMessage.Append($@"<wsns:{elementName}>{SecurityElement.Escape(value?.ToString() ?? string.Empty)}</wsns:{elementName}>");
+            soapMessage.Append($@"<wsns:{elementName}>{SecurityElement.Escape(value?.ToString() ?? String.Empty)}</wsns:{elementName}>");
         }
 
         soapMessage.Append($@"

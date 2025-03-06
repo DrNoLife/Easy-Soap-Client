@@ -1,4 +1,5 @@
 ﻿using EasySoapClient.Interfaces;
+using System.Xml;
 using System.Xml.Linq;
 using System.Xml.Serialization;
 
@@ -6,7 +7,8 @@ namespace EasySoapClient.Services;
 
 public class ParsingService : IParsingService
 {
-    public List<T> ParseSoapResponseList<T>(string result, IWebServiceElement instance) where T : IWebServiceElement, new()
+    public List<T> ParseSoapResponseList<T>(string result, IWebServiceElement instance) 
+        where T : IWebServiceElement, new()
     {
         XDocument xmlDoc = XDocument.Parse(result);
         XNamespace ns = instance.Namespace;
@@ -18,12 +20,12 @@ public class ParsingService : IParsingService
             return [];
         }
 
-        var serializer = new XmlSerializer(typeof(T), new XmlRootAttribute(instance.ServiceName) { Namespace = instance.Namespace });
+        XmlSerializer serializer = new(typeof(T), new XmlRootAttribute(instance.ServiceName) { Namespace = instance.Namespace });
         List<T> list = [];
 
         foreach (var element in elements)
         {
-            using var reader = element.CreateReader();
+            using XmlReader reader = element.CreateReader();
             T obj = (T)serializer.Deserialize(reader)!;
             list.Add(obj);
         }
@@ -31,7 +33,8 @@ public class ParsingService : IParsingService
         return list;
     }
 
-    public T ParseSoapResponseSingle<T>(string result, IWebServiceElement instance) where T : IWebServiceElement, new()
+    public T ParseSoapResponseSingle<T>(string result, IWebServiceElement instance) 
+        where T : IWebServiceElement, new()
     {
         XDocument xmlDoc = XDocument.Parse(result);
         XNamespace ns = instance.Namespace;
@@ -39,8 +42,8 @@ public class ParsingService : IParsingService
         var singleElement = xmlDoc.Descendants(ns + instance.ServiceName).FirstOrDefault()
             ?? throw new InvalidOperationException("No valid element found in the SOAP response." + result);
 
-        var serializer = new XmlSerializer(typeof(T), new XmlRootAttribute(instance.ServiceName) { Namespace = instance.Namespace });
-        using var reader = singleElement.CreateReader();
+        XmlSerializer serializer = new(typeof(T), new XmlRootAttribute(instance.ServiceName) { Namespace = instance.Namespace });
+        using XmlReader reader = singleElement.CreateReader();
         return (T)serializer.Deserialize(reader)!;
     }
 }
