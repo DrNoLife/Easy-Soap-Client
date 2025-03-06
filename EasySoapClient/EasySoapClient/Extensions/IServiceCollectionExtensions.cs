@@ -2,7 +2,6 @@
 using EasySoapClient.Models;
 using EasySoapClient.Services;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Options;
 
 namespace EasySoapClient.Extensions;
 
@@ -16,7 +15,9 @@ public static class IServiceCollectionExtensions
 
         services.AddTransient<ICredentialsProvider, CredentialsService>();
         services.AddTransient<IEasySoapService, EasySoapService>();
+        services.AddTransient<IRequestSenderService, RequestSenderService>();
         services.AddTransient<ISoapEnvelopeService, SoapEnvelopeService>();
+        services.AddTransient<IParsingService, ParsingService>();
 
         return services;
     }
@@ -29,7 +30,9 @@ public static class IServiceCollectionExtensions
 
         services.AddKeyedTransient<ICredentialsProvider, CredentialsService>(key);
         services.AddKeyedTransient<IEasySoapService, EasySoapService>(key);
+        services.AddKeyedTransient<IRequestSenderService, RequestSenderService>(key);
         services.AddTransient<ISoapEnvelopeService, SoapEnvelopeService>();
+        services.AddTransient<IParsingService, ParsingService>();
 
         return services;
     }
