@@ -10,7 +10,7 @@
     <Description>A .NET library for interacting with SOAP services.</Description>
     <PackageTags>soap</PackageTags>
     <PackageReadmeFile>README.md</PackageReadmeFile>
-    <Version>$(VersionPrefix)2.2.1</Version>
+    <Version>$(VersionPrefix)2.2.2</Version>
   </PropertyGroup>
 
   <ItemGroup>

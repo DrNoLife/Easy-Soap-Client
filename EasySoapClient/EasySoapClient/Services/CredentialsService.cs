@@ -13,7 +13,6 @@ public class CredentialsService : ICredentialsProvider
 
     public CredentialsService(
         IOptionsMonitor<EasySoapClientOptions> optionsMonitor,
-        IServiceProvider serviceProvider,
         [ServiceKey] string? serviceKey = null)
     {
         var options = serviceKey is not null

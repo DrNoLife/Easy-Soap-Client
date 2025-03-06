@@ -8,6 +8,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using Microsoft.Extensions.Logging;
 using EasySoapClient.Contracts.CodeUnit;
+using EasySoapClient.Delegates;
 
 namespace EasySoapClient.Services;
 
@@ -22,8 +23,8 @@ public class RequestSenderService : IRequestSenderService
 
     public RequestSenderService(
         ILogger<RequestSenderService> logger,
-        IHttpClientFactory httpClientFactory, 
-        IServiceProvider serviceProvider,
+        IHttpClientFactory httpClientFactory,
+        MaybeKeyedServiceResolver<ICredentialsProvider> resolveRequestSender,
         IOptionsMonitor<EasySoapClientOptions> optionsMonitor,
         [ServiceKey] string? serviceKey = null)
     {
@@ -35,11 +36,7 @@ public class RequestSenderService : IRequestSenderService
             : optionsMonitor.CurrentValue;   // Non-keyed (default) configuration.
 
         _serviceUrl = new Uri(options.BaseUri);
-
-        // Resolve the correct credentials provider.
-        _credentials = serviceKey is not null
-            ? serviceProvider.GetRequiredKeyedService<ICredentialsProvider>(serviceKey)
-            : serviceProvider.GetRequiredService<ICredentialsProvider>();
+        _credentials = resolveRequestSender(serviceKey);
     }
 
     public Task<string> SendWebServiceSoapRequestAsync(CallMethod soapMethod, string soapEnvelope, IWebServiceElement instance, CancellationToken cancellationToken = default)

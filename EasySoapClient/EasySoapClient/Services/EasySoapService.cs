@@ -1,19 +1,29 @@
 ﻿using EasySoapClient.Contracts.CodeUnit;
+using EasySoapClient.Delegates;
 using EasySoapClient.Enums;
 using EasySoapClient.Interfaces;
 using EasySoapClient.Models;
 using EasySoapClient.Models.Responses;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace EasySoapClient.Services;
 
-public class EasySoapService(
-    ISoapEnvelopeService soapEnvelopeService,
-    IParsingService parsingService,
-    IRequestSenderService requestSenderService) : IEasySoapService
+public class EasySoapService : IEasySoapService
 {
-    private readonly ISoapEnvelopeService _soapEnvelopeService = soapEnvelopeService;
-    private readonly IParsingService _parsingService = parsingService;
-    private readonly IRequestSenderService _requestSenderService = requestSenderService;
+    private readonly ISoapEnvelopeService _soapEnvelopeService;
+    private readonly IParsingService _parsingService;
+    private readonly IRequestSenderService _requestSenderService;
+
+    public EasySoapService(
+        ISoapEnvelopeService soapEnvelopeService,
+        IParsingService parsingService,
+        MaybeKeyedServiceResolver<IRequestSenderService> resolveRequestSender,
+        [ServiceKey] string? serviceKey = null)
+    {
+        _soapEnvelopeService = soapEnvelopeService;
+        _parsingService = parsingService;
+        _requestSenderService = resolveRequestSender(serviceKey);
+    }
 
     public async Task<List<T>> GetAsync<T>(IEnumerable<ReadMultipleFilter>? filters = null, int size = 10, string? bookmarkKey = null, CancellationToken cancellationToken = default) 
         where T : IWebServiceElement, new()
