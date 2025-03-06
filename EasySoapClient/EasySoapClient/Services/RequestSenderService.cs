@@ -42,19 +42,31 @@ public class RequestSenderService : IRequestSenderService
             : serviceProvider.GetRequiredService<ICredentialsProvider>();
     }
 
-    public async Task<string> SendWebServiceSoapRequestAsync(CallMethod soapMethod, string soapEnvelope, IWebServiceElement instance, CancellationToken cancellationToken = default)
+    public Task<string> SendWebServiceSoapRequestAsync(CallMethod soapMethod, string soapEnvelope, IWebServiceElement instance, CancellationToken cancellationToken = default)
     {
-        string serviceUrl = $"{_serviceUrl}/Page/{instance.ServiceName}";
+        string relativeUrl = $"/Page/{instance.ServiceName}";
+        string soapAction = $"{instance.Namespace}/{soapMethod}";
+        return SendSoapRequestAsync(relativeUrl, soapEnvelope, soapAction, cancellationToken);
+    }
+
+    public Task<string> SendCodeUnitSoapRequestAsync(CodeUnitRequest request, string soapEnvelope, CancellationToken cancellationToken = default)
+    {
+        string relativeUrl = $"/Codeunit/{request.CodeUnitName}";
+        string soapAction = $"urn:microsoft-dynamics-schemas/codeunit/{request.CodeUnitName}:{request.MethodName}";
+        return SendSoapRequestAsync(relativeUrl, soapEnvelope, soapAction, cancellationToken);
+    }
+
+    private async Task<string> SendSoapRequestAsync(string relativeUrl, string soapEnvelope, string soapAction, CancellationToken cancellationToken = default)
+    {
+        string serviceUrl = $"{_serviceUrl}{relativeUrl}";
 
         using var httpClient = _httpClientFactory.CreateClient();
-        StringContent content = new(soapEnvelope, Encoding.UTF8, "text/xml");
-
-        content.Headers.Add("SOAPAction", GetSoapWebServiceAction(soapMethod, instance));
+        var content = new StringContent(soapEnvelope, Encoding.UTF8, "text/xml");
+        content.Headers.Add("SOAPAction", soapAction);
         httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", Credentials);
 
         HttpResponseMessage response = await httpClient.PostAsync(serviceUrl, content, cancellationToken);
-
-        _logger.LogDebug("Response from WebService: ({StatusCode}) {ReasonPhrase}", response.StatusCode, response.ReasonPhrase);
+        _logger.LogDebug("Response from SOAP Request: ({StatusCode}) {ReasonPhrase}", response.StatusCode, response.ReasonPhrase);
 
         if (!response.IsSuccessStatusCode)
         {
@@ -67,37 +79,4 @@ public class RequestSenderService : IRequestSenderService
 
         return await response.Content.ReadAsStringAsync(cancellationToken);
     }
-
-    public async Task<string> SendCodeUnitSoapRequestAsync(CodeUnitRequest request, string soapEnvelope, CancellationToken cancellationToken = default)
-    {
-        string serviceUrl = $"{_serviceUrl}/Codeunit/{request.CodeUnitName}";
-
-        using var httpClient = _httpClientFactory.CreateClient();
-        StringContent content = new(soapEnvelope, Encoding.UTF8, "text/xml");
-
-        content.Headers.Add("SOAPAction", GetSoapCodeUnitAction(request));
-        httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", Credentials);
-
-        HttpResponseMessage response = await httpClient.PostAsync(serviceUrl, content, cancellationToken);
-
-        _logger.LogDebug("Response from CodeUnit: ({StatusCode}) {ReasonPhrase}", 
-            response.StatusCode, response.ReasonPhrase);
-
-        if (!response.IsSuccessStatusCode)
-        {
-            string errorContent = await response.Content.ReadAsStringAsync(cancellationToken);
-            throw new SoapRequestException(
-                $"HTTP Error: {response.StatusCode}. Details: {errorContent}",
-                errorContent,
-                soapEnvelope);
-        }
-
-        return await response.Content.ReadAsStringAsync(cancellationToken);
-    }
-
-    private static string GetSoapWebServiceAction(CallMethod methodToCall, IWebServiceElement instance)
-        => $"{instance.Namespace}/{methodToCall}";
-
-    private static string GetSoapCodeUnitAction(CodeUnitRequest request)
-        => $"urn:microsoft-dynamics-schemas/codeunit/{request.CodeUnitName}:{request.MethodName}";
 }
