@@ -7,6 +7,7 @@ using System.Text;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using Microsoft.Extensions.Logging;
+using EasySoapClient.Contracts.CodeUnit;
 
 namespace EasySoapClient.Services;
 
@@ -67,6 +68,36 @@ public class RequestSenderService : IRequestSenderService
         return await response.Content.ReadAsStringAsync(cancellationToken);
     }
 
+    public async Task<string> SendCodeUnitSoapRequestAsync(CodeUnitRequest request, string soapEnvelope, CancellationToken cancellationToken = default)
+    {
+        string serviceUrl = $"{_serviceUrl}/Codeunit/{request.CodeUnitName}";
+
+        using var httpClient = _httpClientFactory.CreateClient();
+        StringContent content = new(soapEnvelope, Encoding.UTF8, "text/xml");
+
+        content.Headers.Add("SOAPAction", GetSoapCodeUnitAction(request));
+        httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", Credentials);
+
+        HttpResponseMessage response = await httpClient.PostAsync(serviceUrl, content, cancellationToken);
+
+        _logger.LogDebug("Response from CodeUnit: ({StatusCode}) {ReasonPhrase}", 
+            response.StatusCode, response.ReasonPhrase);
+
+        if (!response.IsSuccessStatusCode)
+        {
+            string errorContent = await response.Content.ReadAsStringAsync(cancellationToken);
+            throw new SoapRequestException(
+                $"HTTP Error: {response.StatusCode}. Details: {errorContent}",
+                errorContent,
+                soapEnvelope);
+        }
+
+        return await response.Content.ReadAsStringAsync(cancellationToken);
+    }
+
     private static string GetSoapWebServiceAction(CallMethod methodToCall, IWebServiceElement instance)
         => $"{instance.Namespace}/{methodToCall}";
+
+    private static string GetSoapCodeUnitAction(CodeUnitRequest request)
+        => $"urn:microsoft-dynamics-schemas/codeunit/{request.CodeUnitName}:{request.MethodName}";
 }

@@ -1,4 +1,6 @@
-﻿using EasySoapClient.Models;
+﻿using EasySoapClient.Contracts.CodeUnit;
+using EasySoapClient.Models;
+using EasySoapClient.Models.Responses;
 
 namespace EasySoapClient.Interfaces;
 
@@ -18,4 +20,6 @@ public interface IEasySoapService
 
     Task<T> CreateAsync<T>(T item, CancellationToken cancellationToken = default) where T : IWebServiceElement, new();
     Task<T> UpdateAsync<T>(T item, CancellationToken cancellationToken = default) where T : IUpdatableWebServiceElement, new();
+
+    Task<CodeUnitResponse> CallCodeUnitAsync(CodeUnitRequest request, CancellationToken cancellationToken = default);
 }

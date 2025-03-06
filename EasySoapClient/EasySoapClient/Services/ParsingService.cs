@@ -1,4 +1,5 @@
 ﻿using EasySoapClient.Interfaces;
+using EasySoapClient.Models.Responses;
 using System.Xml;
 using System.Xml.Linq;
 using System.Xml.Serialization;
@@ -45,5 +46,45 @@ public class ParsingService : IParsingService
         XmlSerializer serializer = new(typeof(T), new XmlRootAttribute(instance.ServiceName) { Namespace = instance.Namespace });
         using XmlReader reader = singleElement.CreateReader();
         return (T)serializer.Deserialize(reader)!;
+    }
+
+    public CodeUnitResponse ParseCodeUnitResponse(string response)
+    {
+        XDocument doc = XDocument.Parse(response);
+
+        XNamespace soapNs = "http://schemas.xmlsoap.org/soap/envelope/";
+        XElement? body = doc?.Root?.Element(soapNs + "Body");
+
+        if (body is null)
+        {
+            return new CodeUnitResponse(String.Empty);
+        }
+
+        // The result element is the first child element of the SOAP Body.
+        XElement? resultElement = body.Elements().FirstOrDefault();
+        if (resultElement is null)
+        {
+            return new CodeUnitResponse(String.Empty);
+        }
+
+        // The result element has its own namespace (e.g. "urn:microsoft-dynamics-schemas/codeunit/FIPTestCodeunit")
+        XNamespace resultNs = resultElement.Name.Namespace;
+        XElement? returnValueElement = resultElement.Element(resultNs + "return_value");
+
+        // Extract the value; if it's missing, default to an empty string.
+        string returnValue = returnValueElement is not null 
+            ? returnValueElement.Value 
+            : String.Empty;
+
+        return new CodeUnitResponse(returnValue);
+
+        // This is the XML structure for a response.
+        //<Soap:Envelope xmlns:Soap="http://schemas.xmlsoap.org/soap/envelope/">
+        //    <Soap:Body>
+        //        <TestFunc1_Result xmlns="urn:microsoft-dynamics-schemas/codeunit/FIPTestCodeunit">
+        //            <return_value>I died at least 5 times while going to the island </return_value>
+        //        </TestFunc1_Result>
+        //    </Soap:Body>
+        //</Soap:Envelope>
     }
 }

@@ -1,6 +1,8 @@
-﻿using EasySoapClient.Enums;
+﻿using EasySoapClient.Contracts.CodeUnit;
+using EasySoapClient.Enums;
 using EasySoapClient.Interfaces;
 using EasySoapClient.Models;
+using EasySoapClient.Models.Responses;
 
 namespace EasySoapClient.Services;
 
@@ -53,5 +55,13 @@ public class EasySoapService(
         string soapResponse = await _requestSenderService.SendWebServiceSoapRequestAsync(CallMethod.Update, soapMessage, item, cancellationToken);
 
         return _parsingService.ParseSoapResponseSingle<T>(soapResponse, item);
+    }
+
+    public async Task<CodeUnitResponse> CallCodeUnitAsync(CodeUnitRequest request, CancellationToken cancellationToken = default)
+    {
+        string soapEnvelope = _soapEnvelopeService.CreateCodeUnitMethodInvocationEnvelope(request);
+        string soapResponse = await _requestSenderService.SendCodeUnitSoapRequestAsync(request, soapEnvelope, cancellationToken);
+
+        return _parsingService.ParseCodeUnitResponse(soapResponse);
     }
 }

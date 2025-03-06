@@ -1,10 +1,18 @@
-﻿using EasySoapClient.Models;
+﻿using EasySoapClient.Contracts.CodeUnit;
+using EasySoapClient.Models;
 
 namespace EasySoapClient.Interfaces;
 
 public interface ISoapEnvelopeService
 {
-    string CreateReadMultipleEnvelope<T>(IEnumerable<ReadMultipleFilter> filters, int size, string? bookmarkKey, T serviceElement) where T : IWebServiceElement;
-    string CreateCreateEnvelope<T>(T item) where T : IWebServiceElement;
-    string CreateUpdateEnvelope<T>(T item) where T : IUpdatableWebServiceElement;
+    string CreateReadMultipleEnvelope<T>(IEnumerable<ReadMultipleFilter> filters, int size, string? bookmarkKey, T serviceElement) 
+        where T : IWebServiceElement;
+
+    string CreateCreateEnvelope<T>(T item) 
+        where T : IWebServiceElement;
+
+    string CreateUpdateEnvelope<T>(T item) 
+        where T : IUpdatableWebServiceElement;
+
+    string CreateCodeUnitMethodInvocationEnvelope(CodeUnitRequest request);
 }

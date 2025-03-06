@@ -1,4 +1,5 @@
-﻿using EasySoapClient.Interfaces;
+﻿using EasySoapClient.Contracts.CodeUnit;
+using EasySoapClient.Interfaces;
 using EasySoapClient.Models;
 using Microsoft.Extensions.Logging;
 using System.Reflection;
@@ -161,5 +162,29 @@ public class SoapEnvelopeService(ILogger<SoapEnvelopeService> logger) : ISoapEnv
         return soapMessage.ToString();
     }
 
+    public virtual string CreateCodeUnitMethodInvocationEnvelope(CodeUnitRequest request)
+    {
+        ArgumentNullException.ThrowIfNull(request, nameof(request));
 
+        StringBuilder soapMessage = new();
+        soapMessage.Append($@"
+        <soapenv:Envelope xmlns:soapenv=""http://schemas.xmlsoap.org/soap/envelope/"" xmlns:wsns=""urn:microsoft-dynamics-schemas/codeunit/{request.CodeUnitName}"">
+            <soapenv:Header/>
+            <soapenv:Body>
+                <wsns:{request.MethodName}>");
+
+        foreach (var parameter in request.Parameters)
+        {
+            soapMessage.Append($@"<wsns:{parameter.ParameterName}>{parameter.ParameterValue}</wsns:{parameter.ParameterName}>");
+        }
+
+        soapMessage.Append($@"
+                </wsns:{request.MethodName}>
+            </soapenv:Body>
+        </soapenv:Envelope>");
+
+        _logger.LogDebug("SOAP code unit envelope created. \n{Envelope}", soapMessage);
+
+        return soapMessage.ToString();
+    }
 }
