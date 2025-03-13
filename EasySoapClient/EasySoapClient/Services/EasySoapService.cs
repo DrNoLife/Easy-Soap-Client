@@ -35,7 +35,7 @@ public class EasySoapService : IEasySoapService
         }
 
         var instance = new T();
-        string soapMessage = _soapEnvelopeService.CreateReadMultipleEnvelope(filters, size, null, instance);
+        string soapMessage = _soapEnvelopeService.CreateReadMultipleEnvelope(filters, size, bookmarkKey, instance);
         string soapResponse = await _requestSenderService.SendWebServiceSoapRequestAsync(CallMethod.ReadMultiple, soapMessage, instance, cancellationToken);
 
         return _parsingService.ParseSoapResponseList<T>(soapResponse, instance);
