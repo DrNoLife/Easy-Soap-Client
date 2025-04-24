@@ -289,6 +289,8 @@ Navision returns the following syntax: *Mail Notification Entry: 4*. If you need
 
 ## Read By Id
 
+***Experimental***
+
 As of version 2.3.0 you can now read a specific item based on the Id of the element, using the new method ```GetByIdAsync<T>(string id, CancellationToken cancellationToken = default)```.
 
 In order to use it, ```T``` must implement the ```ISearchable``` interface.
@@ -314,3 +316,37 @@ Then use the method like this:
 ```csharp
 var item = await _easySoapService.GetByIdAsync<TestNotification>(id, cancellationToken: stoppingToken);
 ```
+
+**Warning: This only works if the table has a singular Id. If the Id is multiple (or a composite), it will not work.**
+
+Example:
+
+```xml
+<xsd:element name="Read">
+    <xsd:complexType>
+        <xsd:sequence>
+            <xsd:element minOccurs="1" maxOccurs="1" name="PO_nr" type="xsd:string"/>
+            <xsd:element minOccurs="1" maxOccurs="1" name="Batch_nr" type="xsd:int"/>
+            <xsd:element minOccurs="1" maxOccurs="1" name="Linjenr" type="xsd:int"/>
+        </xsd:sequence>
+    </xsd:complexType>
+</xsd:element>
+```
+
+This read method defined by the webservice would not work.
+
+This one however would: 
+
+```xml
+<xsd:element name="Read">
+    <xsd:complexType>
+        <xsd:sequence>
+            <xsd:element minOccurs="1" maxOccurs="1" name="ID" type="xsd:int"/>
+        </xsd:sequence>
+    </xsd:complexType>
+</xsd:element>
+```
+
+Another note, the above one would only work because the name is "Id". Currently the limitation is: Only 1 element, and it must be named "Id".
+
+This limitation will be changed in the future, but currently it exists.

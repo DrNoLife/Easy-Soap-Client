@@ -42,6 +42,9 @@ public class EasySoapService(
             bookmarkKey: bookmarkKey,
             cancellationToken: cancellationToken);
 
+    /// <summary>
+    /// Note: This only works if the item has a singular id, and not multiple.. and the Id element is actually named Id.
+    /// </summary>
     public async Task<T> GetByIdAsync<T>(string id, CancellationToken cancellationToken = default)
         where T : ISearchable, new()
     {
