@@ -8,12 +8,14 @@ public static class PropertyInfoExtensions
     /// If the property is DateTime or Nullable<DateTime> and the value is a DateTime,
     /// formats it to Navision string. Otherwise returns the original value.
     /// </summary>
-    public static object FormatNavisionValue(this PropertyInfo property, object value)
+    public static object? FormatNavisionValue(this PropertyInfo property, object value)
     {
+        var propertyValue = property.GetValue(value);
+
         // check for DateTime or Nullable<DateTime>
         if (property.PropertyType == typeof(DateTime) || property.PropertyType == typeof(DateTime?))
         {
-            if (value is DateTime dateTimeValue)
+            if (propertyValue is DateTime dateTimeValue)
             {
                 // use the DateTime extension
                 return dateTimeValue.ToNavisionString();
@@ -21,6 +23,6 @@ public static class PropertyInfoExtensions
         }
 
         // not a DateTime (or value was null), return as-is
-        return value;
+        return propertyValue;
     }
 }

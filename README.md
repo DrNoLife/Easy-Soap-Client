@@ -102,12 +102,13 @@ builder.Services.AddEasySoapClient(options =>
 });
 ```
 
+*Note: Since version 2.3.0 the ```Namespace``` property has no use, and as such can be removed from any classes.*
+
 Models/NavisionDocumentModel.cs
 ```csharp
 public class NavisionDocumentModel : IWebServiceElement
 {
     public string ServiceName => "ItemDocuments";
-    public string Namespace => "urn:microsoft-dynamics-schemas/page/itemdocuments";
 
     [XmlElement(ElementName = "Key")]
     public string Key { get; set; } = String.Empty;
@@ -125,7 +126,6 @@ Models/UpdateDocumentModel
 public class UpdateDocumentModel : IUpdatableWebServiceElement
 {
     public string ServiceName => "ItemDocuments";
-    public string Namespace => "urn:microsoft-dynamics-schemas/page/itemdocuments";
 
     [XmlElement(ElementName = "Key")]
     public string Key { get; set; } = String.Empty;
