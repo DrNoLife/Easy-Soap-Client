@@ -18,8 +18,13 @@ public interface IEasySoapService
         string? bookmarkKey = null, 
         CancellationToken cancellationToken = default) where T : IWebServiceElement, new();
 
+    Task<T> GetByIdAsync<T>(string id, CancellationToken cancellationToken = default)
+        where T : ISearchable, new();
+
     Task<T> CreateAsync<T>(T item, CancellationToken cancellationToken = default) where T : IWebServiceElement, new();
     Task<T> UpdateAsync<T>(T item, CancellationToken cancellationToken = default) where T : IUpdatableWebServiceElement, new();
+
+    Task<string> GetIdFromKeyAsync<T>(string key, bool longResult = false, CancellationToken cancellationToken = default) where T : ISearchable, new();
 
     Task<CodeUnitResponse> CallCodeUnitAsync(CodeUnitRequest request, CancellationToken cancellationToken = default);
 }

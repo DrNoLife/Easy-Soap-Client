@@ -259,3 +259,58 @@ Both the ```AddEasySoapClient``` and ```AddKeyedEasySoapClient``` has been exten
 *Note: This also includes the BaseUri. However, I'd not recommend to do so, as the library uses it to figure out where to send requests, based on the ```options.BaseUri``` and ```IWebServiceElement.ServiceName```.*
 
 The idea is to allow the user to combine it with e.g. Polly to add resilience to the requests, if need be.
+
+## Get Id from Key
+
+As of version 2.3.0 you can now get the internal Id of an item, based on the key, using the new method ```GetIdFromKeyAsync<T>(string key, bool longResult = false, CancellationToken cancellationToken = default)```.
+
+In order to use it, ```T``` must implement the ```ISearchable``` interface.
+
+```csharp
+public class TestNotification : IWebServiceElement, ISearchable
+{
+    public string ServiceName => "NotificationEntries";
+
+    [XmlElement(ElementName = "Key")]
+    public string Key { get; set; } = String.Empty;
+}
+```
+
+*Note: ISearchable already implements the IWebServiceElement, meaning you could leave out that part. I let it stay in for clarity.*
+
+With that, you can now use it like this:
+```csharp
+var result = await _easySoapService.GetIdFromKeyAsync<TestNotification>("12;hsMAAACHBA==9;6075120090;", cancellationToken: stoppingToken);
+```
+
+This would (in my case) result in the value ```"4"```. 
+
+Navision returns the following syntax: *Mail Notification Entry: 4*. If you need the full sentence (and not just the value "4"), you can use the boolean argument ```longResult``` on the method. Setting it to true, returns the full result.
+
+## Read By Id
+
+As of version 2.3.0 you can now read a specific item based on the Id of the element, using the new method ```GetByIdAsync<T>(string id, CancellationToken cancellationToken = default)```.
+
+In order to use it, ```T``` must implement the ```ISearchable``` interface.
+
+```csharp
+public class TestNotification : IWebServiceElement, ISearchable
+{
+    public string ServiceName => "NotificationEntries";
+
+    [XmlElement(ElementName = "Key")]
+    public string Key { get; set; } = String.Empty;
+
+    [XmlElement(ElementName = "Mail_Entry_Text")]
+    public string Text { get; set; } = String.Empty;
+
+    [XmlElement(ElementName = "Item_No")]
+    public string ItemNumber { get; set; } = String.Empty;
+}
+```
+
+Then use the method like this:
+
+```csharp
+var item = await _easySoapService.GetByIdAsync<TestNotification>(id, cancellationToken: stoppingToken);
+```

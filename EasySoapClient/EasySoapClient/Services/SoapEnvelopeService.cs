@@ -3,6 +3,7 @@ using EasySoapClient.Extensions;
 using EasySoapClient.Interfaces;
 using EasySoapClient.Models;
 using Microsoft.Extensions.Logging;
+using System.Drawing;
 using System.Reflection;
 using System.Security;
 using System.Text;
@@ -46,6 +47,30 @@ public class SoapEnvelopeService(ILogger<SoapEnvelopeService> logger) : ISoapEnv
 
         soapMessage.Append(@"
                 </wsns:ReadMultiple>
+            </soapenv:Body>
+        </soapenv:Envelope>");
+
+        _logger.LogDebug("Soap envelope created. \n{Envelope}", soapMessage);
+
+        return soapMessage.ToString();
+    }
+
+    public virtual string CreateReadByIdEnvelope<T>(string id)
+        where T : ISearchable, new()
+    {
+        ArgumentException.ThrowIfNullOrEmpty(id, "The 'Id' property must be set for this operation.");
+
+        var instance = new T();
+
+        StringBuilder soapMessage = new();
+
+        soapMessage.Append($@"
+        <soapenv:Envelope xmlns:soapenv=""http://schemas.xmlsoap.org/soap/envelope/"" xmlns:wsns=""{instance.GetXmlNamespace()}"">
+            <soapenv:Header/>
+            <soapenv:Body>
+                <wsns:Read>
+                    <wsns:ID>{id}</wsns:ID>
+                </wsns:Read>
             </soapenv:Body>
         </soapenv:Envelope>");
 
@@ -135,6 +160,32 @@ public class SoapEnvelopeService(ILogger<SoapEnvelopeService> logger) : ISoapEnv
         soapMessage.Append($@"
                     </wsns:{item.ServiceName}>
                 </wsns:Update>
+            </soapenv:Body>
+        </soapenv:Envelope>");
+
+        _logger.LogDebug("SOAP Update envelope created. \n{Envelope}", soapMessage);
+
+        return soapMessage.ToString();
+    }
+
+    public virtual string CreateGetIdEnvelope<T>(string key)
+        where T : ISearchable, new()
+    {
+        if (String.IsNullOrEmpty(key))
+        {
+            throw new ArgumentException("The 'Key' property must be set for update operations.");
+        }
+
+        var instance = new T();
+
+        StringBuilder soapMessage = new();
+        soapMessage.Append($@"
+        <soapenv:Envelope xmlns:soapenv=""http://schemas.xmlsoap.org/soap/envelope/"" xmlns:wsns=""{instance.GetXmlNamespace()}"">
+            <soapenv:Header/>
+            <soapenv:Body>
+                <wsns:GetRecIdFromKey>
+                    <wsns:Key>{key}</wsns:Key>
+                </wsns:GetRecIdFromKey>
             </soapenv:Body>
         </soapenv:Envelope>");
 

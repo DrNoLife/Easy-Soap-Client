@@ -2,7 +2,9 @@
 
 public enum CallMethod
 {
+    Read,
     ReadMultiple,
     Create,
-    Update
+    Update,
+    GetRecIdFromKey
 }

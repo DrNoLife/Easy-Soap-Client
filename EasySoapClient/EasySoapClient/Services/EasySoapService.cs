@@ -42,6 +42,17 @@ public class EasySoapService(
             bookmarkKey: bookmarkKey,
             cancellationToken: cancellationToken);
 
+    public async Task<T> GetByIdAsync<T>(string id, CancellationToken cancellationToken = default)
+        where T : ISearchable, new()
+    {
+        var instance = new T();
+
+        string soapMessage = _soapEnvelopeService.CreateReadByIdEnvelope<T>(id);
+        string soapResponse = await _requestSenderService.SendWebServiceSoapRequestAsync(CallMethod.Read, soapMessage, instance, cancellationToken);
+
+        return _parsingService.ParseSoapResponseSingle<T>(soapResponse, instance);
+    }
+
     public async Task<T> CreateAsync<T>(T item, CancellationToken cancellationToken = default) 
         where T : IWebServiceElement, new()
     {
@@ -58,6 +69,19 @@ public class EasySoapService(
         string soapResponse = await _requestSenderService.SendWebServiceSoapRequestAsync(CallMethod.Update, soapMessage, item, cancellationToken);
 
         return _parsingService.ParseSoapResponseSingle<T>(soapResponse, item);
+    }
+
+    public async Task<string> GetIdFromKeyAsync<T>(string key, bool longResult = false, CancellationToken cancellationToken = default) 
+        where T : ISearchable, new()
+    {
+        string soapMessage = _soapEnvelopeService.CreateGetIdEnvelope<T>(key);
+        string soapResponse = await _requestSenderService.SendWebServiceSoapRequestAsync(CallMethod.GetRecIdFromKey, soapMessage, new T(), cancellationToken);
+
+        var parsedResult = _parsingService.ParseIdFromKey<T>(soapResponse);
+
+        return longResult
+            ? parsedResult
+            : parsedResult.Split(": ").Last();
     }
 
     public async Task<CodeUnitResponse> CallCodeUnitAsync(CodeUnitRequest request, CancellationToken cancellationToken = default)

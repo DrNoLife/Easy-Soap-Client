@@ -49,6 +49,22 @@ public class ParsingService : IParsingService
         return (T)serializer.Deserialize(reader)!;
     }
 
+    public string ParseIdFromKey<T>(string result)
+    {
+        if (String.IsNullOrEmpty(result))
+        {
+            throw new ArgumentException("Result is null or empty.", nameof(result));
+        }
+
+        XDocument xmlDoc = XDocument.Parse(result);
+
+        XElement? element = xmlDoc
+            .Descendants() 
+            .FirstOrDefault(x => x.Name.LocalName.Equals("GetRecIdFromKey_Result", StringComparison.Ordinal));
+
+        return element?.Value.Trim() ?? String.Empty;
+    }
+
     public CodeUnitResponse ParseCodeUnitResponse(string response)
     {
         XDocument doc = XDocument.Parse(response);
