@@ -1,4 +1,5 @@
 ﻿using EasySoapClient.Contracts.CodeUnit;
+using EasySoapClient.Extensions;
 using EasySoapClient.Interfaces;
 using EasySoapClient.Models;
 using Microsoft.Extensions.Logging;
@@ -19,7 +20,7 @@ public class SoapEnvelopeService(ILogger<SoapEnvelopeService> logger) : ISoapEnv
         StringBuilder soapMessage = new();
 
         soapMessage.Append($@"
-        <soapenv:Envelope xmlns:soapenv=""http://schemas.xmlsoap.org/soap/envelope/"" xmlns:wsns=""{serviceElement.Namespace}"">
+        <soapenv:Envelope xmlns:soapenv=""http://schemas.xmlsoap.org/soap/envelope/"" xmlns:wsns=""{serviceElement.GetXmlNamespace()}"">
             <soapenv:Header/>
             <soapenv:Body>
                 <wsns:ReadMultiple>");
@@ -58,7 +59,7 @@ public class SoapEnvelopeService(ILogger<SoapEnvelopeService> logger) : ISoapEnv
     {
         StringBuilder soapMessage = new();
         soapMessage.Append($@"
-        <soapenv:Envelope xmlns:soapenv=""http://schemas.xmlsoap.org/soap/envelope/"" xmlns:wsns=""{item.Namespace}"">
+        <soapenv:Envelope xmlns:soapenv=""http://schemas.xmlsoap.org/soap/envelope/"" xmlns:wsns=""{item.GetXmlNamespace()}"">
             <soapenv:Header/>
             <soapenv:Body>
                 <wsns:Create>
@@ -69,7 +70,7 @@ public class SoapEnvelopeService(ILogger<SoapEnvelopeService> logger) : ISoapEnv
 
         foreach (var property in properties)
         {
-            if (property.Name == nameof(IWebServiceElement.ServiceName) || property.Name == nameof(IWebServiceElement.Namespace))
+            if (property.Name == nameof(IWebServiceElement.ServiceName))
             {
                 continue;
             }
@@ -77,18 +78,8 @@ public class SoapEnvelopeService(ILogger<SoapEnvelopeService> logger) : ISoapEnv
             var xmlElementAttribute = property.GetCustomAttribute<XmlElementAttribute>();
             string elementName = xmlElementAttribute?.ElementName ?? property.Name;
 
-            // Get the property value.
-            var value = property.GetValue(item);
-
-            // Check if the property is DateTime or Nullable<DateTime> and format it
-            if (property.PropertyType == typeof(DateTime) || property.PropertyType == typeof(DateTime?))
-            {
-                if (value is DateTime dateTimeValue)
-                {
-                    // Format the DateTime value to the required ISO 8601 format
-                    value = dateTimeValue.ToString("yyyy-MM-ddTHH:mm:ss");
-                }
-            }
+            // Get the formatted property value.
+            var value = property.FormatNavisionValue(item);
 
             // Append the element to the soap message, formatting value as string if necessary
             soapMessage.Append($@"<wsns:{elementName}>{value ?? String.Empty}</wsns:{elementName}>");
@@ -115,7 +106,7 @@ public class SoapEnvelopeService(ILogger<SoapEnvelopeService> logger) : ISoapEnv
 
         StringBuilder soapMessage = new();
         soapMessage.Append($@"
-        <soapenv:Envelope xmlns:soapenv=""http://schemas.xmlsoap.org/soap/envelope/"" xmlns:wsns=""{item.Namespace}"">
+        <soapenv:Envelope xmlns:soapenv=""http://schemas.xmlsoap.org/soap/envelope/"" xmlns:wsns=""{item.GetXmlNamespace()}"">
             <soapenv:Header/>
             <soapenv:Body>
                 <wsns:Update>
@@ -126,7 +117,7 @@ public class SoapEnvelopeService(ILogger<SoapEnvelopeService> logger) : ISoapEnv
 
         foreach (var property in properties)
         {
-            if (property.Name == nameof(IWebServiceElement.ServiceName) || property.Name == nameof(IWebServiceElement.Namespace))
+            if (property.Name == nameof(IWebServiceElement.ServiceName))
             {
                 continue;
             }
@@ -134,18 +125,8 @@ public class SoapEnvelopeService(ILogger<SoapEnvelopeService> logger) : ISoapEnv
             var xmlElementAttribute = property.GetCustomAttribute<XmlElementAttribute>();
             string elementName = xmlElementAttribute?.ElementName ?? property.Name;
 
-            // Get the property value.
-            var value = property.GetValue(item);
-
-            // Check if the property is DateTime or Nullable<DateTime> and format it
-            if (property.PropertyType == typeof(DateTime) || property.PropertyType == typeof(DateTime?))
-            {
-                if (value is DateTime dateTimeValue)
-                {
-                    // Format the DateTime value to the required ISO 8601 format
-                    value = dateTimeValue.ToString("yyyy-MM-ddTHH:mm:ss");
-                }
-            }
+            // Get the formatted property value.
+            var value = property.FormatNavisionValue(item);
 
             // Append the element to the soap message, formatting value as string if necessary
             soapMessage.Append($@"<wsns:{elementName}>{SecurityElement.Escape(value?.ToString() ?? String.Empty)}</wsns:{elementName}>");

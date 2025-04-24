@@ -1,4 +1,5 @@
-﻿using EasySoapClient.Interfaces;
+﻿using EasySoapClient.Extensions;
+using EasySoapClient.Interfaces;
 using EasySoapClient.Models.Responses;
 using System.Xml;
 using System.Xml.Linq;
@@ -12,16 +13,16 @@ public class ParsingService : IParsingService
         where T : IWebServiceElement, new()
     {
         XDocument xmlDoc = XDocument.Parse(result);
-        XNamespace ns = instance.Namespace;
+        XNamespace xmlNamespace = instance.GetXmlNamespace();
 
-        var elements = xmlDoc.Descendants(ns + instance.ServiceName);
+        var elements = xmlDoc.Descendants(xmlNamespace + instance.ServiceName);
 
         if (!elements.Any())
         {
             return [];
         }
 
-        XmlSerializer serializer = new(typeof(T), new XmlRootAttribute(instance.ServiceName) { Namespace = instance.Namespace });
+        XmlSerializer serializer = new(typeof(T), new XmlRootAttribute(instance.ServiceName) { Namespace = xmlNamespace.ToString() });
         List<T> list = [];
 
         foreach (var element in elements)
@@ -38,12 +39,12 @@ public class ParsingService : IParsingService
         where T : IWebServiceElement, new()
     {
         XDocument xmlDoc = XDocument.Parse(result);
-        XNamespace ns = instance.Namespace;
+        XNamespace xmlNamespace = instance.GetXmlNamespace();
 
-        var singleElement = xmlDoc.Descendants(ns + instance.ServiceName).FirstOrDefault()
+        var singleElement = xmlDoc.Descendants(xmlNamespace + instance.ServiceName).FirstOrDefault()
             ?? throw new InvalidOperationException("No valid element found in the SOAP response." + result);
 
-        XmlSerializer serializer = new(typeof(T), new XmlRootAttribute(instance.ServiceName) { Namespace = instance.Namespace });
+        XmlSerializer serializer = new(typeof(T), new XmlRootAttribute(instance.ServiceName) { Namespace = xmlNamespace.ToString() });
         using XmlReader reader = singleElement.CreateReader();
         return (T)serializer.Deserialize(reader)!;
     }
@@ -67,24 +68,14 @@ public class ParsingService : IParsingService
             return new CodeUnitResponse(String.Empty);
         }
 
-        // The result element has its own namespace (e.g. "urn:microsoft-dynamics-schemas/codeunit/FIPTestCodeunit")
+        // The result element has its own namespace (e.g. "urn:microsoft-dynamics-schemas/codeunit/FIPTestCodeunit").
         XNamespace resultNs = resultElement.Name.Namespace;
         XElement? returnValueElement = resultElement.Element(resultNs + "return_value");
 
-        // Extract the value; if it's missing, default to an empty string.
         string returnValue = returnValueElement is not null 
             ? returnValueElement.Value 
             : String.Empty;
 
         return new CodeUnitResponse(returnValue);
-
-        // This is the XML structure for a response.
-        //<Soap:Envelope xmlns:Soap="http://schemas.xmlsoap.org/soap/envelope/">
-        //    <Soap:Body>
-        //        <TestFunc1_Result xmlns="urn:microsoft-dynamics-schemas/codeunit/FIPTestCodeunit">
-        //            <return_value>I died at least 5 times while going to the island </return_value>
-        //        </TestFunc1_Result>
-        //    </Soap:Body>
-        //</Soap:Envelope>
     }
 }

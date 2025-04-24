@@ -228,3 +228,34 @@ Then call it like this.
 ```csharp
 CodeUnitResponse response = await _easySoapService.CallCodeUnitAsync(request, stoppingToken);
 ```
+
+## Configure the HttpClient
+As of version 2.3.0 the used HttpClient is configurable, and different from the default http client used in the rest of the application.
+
+```csharp
+builder.Services.AddEasySoapClient(
+    options =>
+    {
+        options.Username = builder.Configuration["Navision:Company:Username"]
+            ?? throw new Exception("Failed to get the 'Username' for Navision from appsettings.json.");
+
+        options.Password = builder.Configuration["Navision:Company:Password"]
+            ?? throw new Exception("Failed to get the 'Password' for Navision from appsettings.json.");
+
+        options.BaseUri = builder.Configuration["Navision:Company:WebServiceLink"]
+            ?? throw new Exception("Failed to get the 'BaseUri' for Navision from appsettings.json.");
+    }, 
+    http =>
+    {
+        http.ConfigureHttpClient((provider, client) =>
+        {
+            client.Timeout = TimeSpan.FromSeconds(10);
+        });
+    });
+```
+
+Both the ```AddEasySoapClient``` and ```AddKeyedEasySoapClient``` has been extended to now include the following parameter: ```Action<IHttpClientBuilder>? configureHttpClientBuilder = null```. Meaning you can now use the ```IHttpClientBuilder``` to configure everything regarding the HttpClient.
+
+*Note: This also includes the BaseUri. However, I'd not recommend to do so, as the library uses it to figure out where to send requests, based on the ```options.BaseUri``` and ```IWebServiceElement.ServiceName```.*
+
+The idea is to allow the user to combine it with e.g. Polly to add resilience to the requests, if need be.
