@@ -142,7 +142,7 @@ public class SoapEnvelopeService(ILogger<SoapEnvelopeService> logger) : ISoapEnv
 
         foreach (var property in properties)
         {
-            if (property.Name == nameof(IWebServiceElement.ServiceName))
+            if (property.Name == nameof(IWebServiceElement.ServiceName) || property.Name == nameof(IUpdatableWebServiceElement.Key))
             {
                 continue;
             }
