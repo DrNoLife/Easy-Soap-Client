@@ -1,4 +1,5 @@
 ﻿using EasySoapClient.Contracts.CodeUnit;
+using EasySoapClient.Contracts.Read;
 using EasySoapClient.Delegates;
 using EasySoapClient.Enums;
 using EasySoapClient.Interfaces;
@@ -45,12 +46,12 @@ public class EasySoapService(
     /// <summary>
     /// Note: This only works if the item has a singular id, and not multiple.. and the Id element is actually named Id.
     /// </summary>
-    public async Task<T> GetByIdAsync<T>(string id, CancellationToken cancellationToken = default)
+    public async Task<T> GetItemAsync<T>(ReadRequest request, CancellationToken cancellationToken = default)
         where T : ISearchable, new()
     {
         var instance = new T();
 
-        string soapMessage = _soapEnvelopeService.CreateReadByIdEnvelope<T>(id);
+        string soapMessage = _soapEnvelopeService.CreateReadEnvelope<T>(request);
         string soapResponse = await _requestSenderService.SendWebServiceSoapRequestAsync(CallMethod.Read, soapMessage, instance, cancellationToken);
 
         return _parsingService.ParseSoapResponseSingle<T>(soapResponse, instance);

@@ -287,66 +287,35 @@ This would (in my case) result in the value ```"4"```.
 
 Navision returns the following syntax: *Mail Notification Entry: 4*. If you need the full sentence (and not just the value "4"), you can use the boolean argument ```longResult``` on the method. Setting it to true, returns the full result.
 
-## Read By Id
+## Get a single specific item
 
-***Experimental***
+As of version 2.4.0 a new method exists: ```public async Task<T> GetItemAsync<T>(ReadRequest request, CancellationToken cancellationToken = default) where T : ISearchable, new()```.
 
-As of version 2.3.0 you can now read a specific item based on the Id of the element, using the new method ```GetByIdAsync<T>(string id, CancellationToken cancellationToken = default)```.
+This allows the you to provide a ```ReadRequest```, and based on that return a single specific item that matches the request. Basically, we are implementing the ```Read``` endpoint for web services.
 
-In order to use it, ```T``` must implement the ```ISearchable``` interface.
-
-```csharp
-public class TestNotification : IWebServiceElement, ISearchable
-{
-    public string ServiceName => "NotificationEntries";
-
-    [XmlElement(ElementName = "Key")]
-    public string Key { get; set; } = String.Empty;
-
-    [XmlElement(ElementName = "Mail_Entry_Text")]
-    public string Text { get; set; } = String.Empty;
-
-    [XmlElement(ElementName = "Item_No")]
-    public string ItemNumber { get; set; } = String.Empty;
-}
-```
-
-Then use the method like this:
+Usage, very simple as usual:
 
 ```csharp
-var item = await _easySoapService.GetByIdAsync<TestNotification>(id, cancellationToken: stoppingToken);
+_ = await _easySoapService.GetItemAsync<NavisionSalesOrderList>(readRequest, cancellationToken: stoppingToken);
 ```
 
-**Warning: This only works if the table has a singular Id. If the Id is multiple (or a composite), it will not work.**
+In order to create a ```ReadRequest```, you can either construct it manually, or use the new builder. Here are examples of both scenarios:
 
-Example:
+```csharp
+var readRequestWithBuilder1 = ReadRequestBuilder.Single("ITEM-NUMBER-HERE"); // Key defaults to "No".
+var readRequestWithBuilder2 = ReadRequestBuilder.Single("ITEM-ID-HERE", "Id");
+var readRequestWithBuilder3 = ReadRequestBuilder
+    .New()
+    .With("No", "ITEM-NUMBER-HERE")
+    .Build(); // Build is optional, but does make it more clear.
+var readRequestWithBuilder4 = ReadRequestBuilder
+    .New()
+    .With(("Line_No", 111222333), ("Item_No", "ITEM-NUMBER-HERE"));
 
-```xml
-<xsd:element name="Read">
-    <xsd:complexType>
-        <xsd:sequence>
-            <xsd:element minOccurs="1" maxOccurs="1" name="PO_nr" type="xsd:string"/>
-            <xsd:element minOccurs="1" maxOccurs="1" name="Batch_nr" type="xsd:int"/>
-            <xsd:element minOccurs="1" maxOccurs="1" name="Linjenr" type="xsd:int"/>
-        </xsd:sequence>
-    </xsd:complexType>
-</xsd:element>
+var readRequestWithoutBuilder1 = new ReadRequest("Line_No", 111222333);
+var readRequestWithoutBuilder2 = new ReadRequest(("ProductOrder", "PO-HBA-77283"), ("BatchNumber", 39923));
+var readRequestWithoutBuilder3 = new ReadRequest(
+    ("ProductOrder", "PO-HBA-77283"),
+    ("BatchNumber", 39923),
+    ("LineNumber", 71112));
 ```
-
-This read method defined by the webservice would not work.
-
-This one however would: 
-
-```xml
-<xsd:element name="Read">
-    <xsd:complexType>
-        <xsd:sequence>
-            <xsd:element minOccurs="1" maxOccurs="1" name="ID" type="xsd:int"/>
-        </xsd:sequence>
-    </xsd:complexType>
-</xsd:element>
-```
-
-Another note, the above one would only work because the name is "Id". Currently the limitation is: Only 1 element, and it must be named "Id".
-
-This limitation will be changed in the future, but currently it exists.

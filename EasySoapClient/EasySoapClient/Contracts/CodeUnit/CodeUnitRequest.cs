@@ -1,6 +1,6 @@
 ﻿namespace EasySoapClient.Contracts.CodeUnit;
 
-public record CodeUnitRequest(
+public record struct CodeUnitRequest(
     string CodeUnitName,
     string MethodName,
     IEnumerable<CodeUnitParameter> Parameters)
@@ -15,4 +15,4 @@ public record CodeUnitRequest(
         => $"{GenerateNamespace}:{MethodName}";
 }
 
-public record CodeUnitParameter(string ParameterName, string ParameterValue);
+public record struct CodeUnitParameter(string ParameterName, string ParameterValue);

@@ -1,4 +1,5 @@
 ﻿using EasySoapClient.Contracts.CodeUnit;
+using EasySoapClient.Contracts.Read;
 using EasySoapClient.Extensions;
 using EasySoapClient.Interfaces;
 using EasySoapClient.Models;
@@ -55,24 +56,31 @@ public class SoapEnvelopeService(ILogger<SoapEnvelopeService> logger) : ISoapEnv
         return soapMessage.ToString();
     }
 
-    public virtual string CreateReadByIdEnvelope<T>(string id)
+    public virtual string CreateReadEnvelope<T>(ReadRequest request)
         where T : ISearchable, new()
     {
-        ArgumentException.ThrowIfNullOrEmpty(id, "The 'Id' property must be set for this operation.");
+        ArgumentException.ThrowIfNullOrEmpty(nameof(request.Parameters), "The 'Parameters' property must be set for this operation.");
 
         var instance = new T();
 
         StringBuilder soapMessage = new();
 
         soapMessage.Append($@"
-        <soapenv:Envelope xmlns:soapenv=""http://schemas.xmlsoap.org/soap/envelope/"" xmlns:wsns=""{instance.GetXmlNamespace()}"">
-            <soapenv:Header/>
-            <soapenv:Body>
-                <wsns:Read>
-                    <wsns:ID>{id}</wsns:ID>
-                </wsns:Read>
-            </soapenv:Body>
-        </soapenv:Envelope>");
+            <soapenv:Envelope xmlns:soapenv=""http://schemas.xmlsoap.org/soap/envelope/"" xmlns:wsns=""{instance.GetXmlNamespace()}"">
+                <soapenv:Header/>
+                <soapenv:Body>
+                    <wsns:Read>");
+
+        foreach (var parameter in request.Parameters)
+        {
+            // <wsns:ID>{id}</wsns:ID>
+            soapMessage.Append($"<wsns:{parameter.Key}>{parameter.Value}</wsns:{parameter.Key}>");
+        }
+
+        soapMessage.Append($@"
+                    </wsns:Read>
+                </soapenv:Body>
+            </soapenv:Envelope>");
 
         _logger.LogDebug("Soap envelope created. \n{Envelope}", soapMessage);
 

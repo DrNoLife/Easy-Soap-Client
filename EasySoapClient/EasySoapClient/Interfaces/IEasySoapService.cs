@@ -1,4 +1,5 @@
 ﻿using EasySoapClient.Contracts.CodeUnit;
+using EasySoapClient.Contracts.Read;
 using EasySoapClient.Models;
 using EasySoapClient.Models.Responses;
 
@@ -18,7 +19,7 @@ public interface IEasySoapService
         string? bookmarkKey = null, 
         CancellationToken cancellationToken = default) where T : IWebServiceElement, new();
 
-    Task<T> GetByIdAsync<T>(string id, CancellationToken cancellationToken = default)
+    Task<T> GetItemAsync<T>(ReadRequest request, CancellationToken cancellationToken = default)
         where T : ISearchable, new();
 
     Task<T> CreateAsync<T>(T item, CancellationToken cancellationToken = default) where T : IWebServiceElement, new();
