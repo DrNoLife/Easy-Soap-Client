@@ -2,6 +2,7 @@
 using EasySoapClient.Interfaces;
 using EasySoapClient.Models.Responses;
 using Microsoft.Extensions.Logging;
+using System.Text;
 using System.Xml;
 using System.Xml.Linq;
 using System.Xml.Serialization;
@@ -106,14 +107,66 @@ public class ParsingService(ILogger<ParsingService> logger) : IParsingService
         }
         catch (XmlException ex)
         {
+            string context = GetXmlContext(xml, ex.LineNumber, linesBefore: 3, linesAfter: 3);
+
             _logger.LogError(
                 ex,
-                "Invalid SOAP XML around line {Line}, position {Position}. Response: {Response}",
+                "Failed to parse SOAP XML at line {LineNumber}, position {LinePosition}. XML context: \n{XmlContext}",
                 ex.LineNumber,
                 ex.LinePosition,
-                xml);
+                context);
 
             throw;
         }
+    }
+
+    private static string GetXmlContext(string xml, int targetLine, int linesBefore, int linesAfter)
+    {
+        int startLine = Math.Max(1, targetLine - linesBefore);
+        int endLine = targetLine + linesAfter;
+
+        using StringReader reader = new(xml);
+        StringBuilder builder = new();
+        int currentLine = 1;
+
+        while (reader.ReadLine() is { } line)
+        {
+            if (currentLine > endLine)
+            {
+                break;
+            }
+
+            if (currentLine >= startLine)
+            {
+                string marker = currentLine == targetLine ? ">>>" : "   ";
+                builder.Append(marker);
+                builder.Append(' ');
+                builder.Append(currentLine);
+                builder.Append(": ");
+                builder.AppendLine(EscapeControlCharacters(line));
+            }
+
+            currentLine++;
+        }
+
+        return builder.ToString();
+    }
+
+    private static string EscapeControlCharacters(string value)
+    {
+        StringBuilder builder = new(value.Length);
+
+        foreach (char character in value)
+        {
+            if (char.IsControl(character) && character is not '\r' and not '\n' and not '\t')
+            {
+                builder.Append($@"\u{(int)character:X4}");
+                continue;
+            }
+
+            builder.Append(character);
+        }
+
+        return builder.ToString();
     }
 }
