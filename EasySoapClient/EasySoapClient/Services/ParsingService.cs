@@ -1,18 +1,21 @@
 ﻿using EasySoapClient.Extensions;
 using EasySoapClient.Interfaces;
 using EasySoapClient.Models.Responses;
+using Microsoft.Extensions.Logging;
 using System.Xml;
 using System.Xml.Linq;
 using System.Xml.Serialization;
 
 namespace EasySoapClient.Services;
 
-public class ParsingService : IParsingService
+public class ParsingService(ILogger<ParsingService> logger) : IParsingService
 {
-    public List<T> ParseSoapResponseList<T>(string result, IWebServiceElement instance) 
+    private readonly ILogger<ParsingService> _logger = logger;
+
+    public List<T> ParseSoapResponseList<T>(string result, IWebServiceElement instance)
         where T : IWebServiceElement, new()
     {
-        XDocument xmlDoc = XDocument.Parse(result);
+        XDocument xmlDoc = ParseDocument(result);
         XNamespace xmlNamespace = instance.GetXmlNamespace();
 
         var elements = xmlDoc.Descendants(xmlNamespace + instance.ServiceName);
@@ -38,7 +41,7 @@ public class ParsingService : IParsingService
     public T ParseSoapResponseSingle<T>(string result, IWebServiceElement instance) 
         where T : IWebServiceElement, new()
     {
-        XDocument xmlDoc = XDocument.Parse(result);
+        XDocument xmlDoc = ParseDocument(result);
         XNamespace xmlNamespace = instance.GetXmlNamespace();
 
         var singleElement = xmlDoc.Descendants(xmlNamespace + instance.ServiceName).FirstOrDefault()
@@ -56,7 +59,7 @@ public class ParsingService : IParsingService
             throw new ArgumentException("Result is null or empty.", nameof(result));
         }
 
-        XDocument xmlDoc = XDocument.Parse(result);
+        XDocument xmlDoc = ParseDocument(result);
 
         XElement? element = xmlDoc
             .Descendants() 
@@ -67,7 +70,7 @@ public class ParsingService : IParsingService
 
     public CodeUnitResponse ParseCodeUnitResponse(string response)
     {
-        XDocument doc = XDocument.Parse(response);
+        XDocument doc = ParseDocument(response);
 
         XNamespace soapNs = "http://schemas.xmlsoap.org/soap/envelope/";
         XElement? body = doc?.Root?.Element(soapNs + "Body");
@@ -93,5 +96,24 @@ public class ParsingService : IParsingService
             : String.Empty;
 
         return new CodeUnitResponse(returnValue);
+    }
+
+    private XDocument ParseDocument(string xml)
+    {
+        try
+        {
+            return XDocument.Parse(xml);
+        }
+        catch (XmlException ex)
+        {
+            _logger.LogError(
+                ex,
+                "Invalid SOAP XML around line {Line}, position {Position}. Response: {Response}",
+                ex.LineNumber,
+                ex.LinePosition,
+                xml);
+
+            throw;
+        }
     }
 }
