@@ -9,9 +9,10 @@ using System.Xml.Serialization;
 
 namespace EasySoapClient.Services;
 
-public class ParsingService(ILogger<ParsingService> logger) : IParsingService
+public class ParsingService(ILogger<ParsingService> logger, IXmlSanitizerService xmlSanitizer) : IParsingService
 {
     private readonly ILogger<ParsingService> _logger = logger;
+    private readonly IXmlSanitizerService _xmlSanitizer = xmlSanitizer;
 
     public List<T> ParseSoapResponseList<T>(string result, IWebServiceElement instance)
         where T : IWebServiceElement, new()
@@ -109,14 +110,35 @@ public class ParsingService(ILogger<ParsingService> logger) : IParsingService
         {
             string context = GetXmlContext(xml, ex.LineNumber, linesBefore: 3, linesAfter: 3);
 
-            _logger.LogError(
+            _logger.LogWarning(
                 ex,
-                "Failed to parse SOAP XML at line {LineNumber}, position {LinePosition}. XML context: \n{XmlContext}",
+                "Failed to parse SOAP XML at line {LineNumber}, position {LinePosition}. Attempting to remove illegal XML characters and retrying. XML context: \n{XmlContext}",
                 ex.LineNumber,
                 ex.LinePosition,
                 context);
 
-            throw;
+            string sanitized = _xmlSanitizer.RemoveIllegalCharacters(xml);
+
+            try
+            {
+                XDocument document = XDocument.Parse(sanitized);
+                _logger.LogWarning("Successfully parsed the SOAP XML after removing illegal characters.");
+
+                return document;
+            }
+            catch (XmlException retryException)
+            {
+                string retryContext = GetXmlContext(sanitized, retryException.LineNumber, linesBefore: 3, linesAfter: 3);
+
+                _logger.LogError(
+                    retryException,
+                    "Failed to parse SOAP XML even after removing illegal characters. Line {LineNumber}, position {LinePosition}. XML context: \n{XmlContext}",
+                    retryException.LineNumber,
+                    retryException.LinePosition,
+                    retryContext);
+
+                throw new XmlException(retryException.Message, ex, retryException.LineNumber, retryException.LinePosition);
+            }
         }
     }
 

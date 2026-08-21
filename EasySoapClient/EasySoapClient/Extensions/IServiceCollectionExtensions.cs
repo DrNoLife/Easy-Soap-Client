@@ -82,6 +82,7 @@ public static class IServiceCollectionExtensions
         services.AddTransient<IEasySoapService, EasySoapService>();
         services.AddTransient<ISoapEnvelopeService, SoapEnvelopeService>();
         services.AddTransient<IParsingService, ParsingService>();
+        services.AddTransient<IXmlSanitizerService, XmlSanitizerService>();
 
         return services;
     }
@@ -101,6 +102,7 @@ public static class IServiceCollectionExtensions
         // These registrations are independent of the key.
         services.AddTransient<ISoapEnvelopeService, SoapEnvelopeService>();
         services.AddTransient<IParsingService, ParsingService>();
+        services.AddTransient<IXmlSanitizerService, XmlSanitizerService>();
 
         return services;
     }

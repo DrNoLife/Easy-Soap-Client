@@ -319,3 +319,11 @@ var readRequestWithoutBuilder3 = new ReadRequest(
     ("BatchNumber", 39923),
     ("LineNumber", 71112));
 ```
+
+## Resilience to illegal XML characters
+
+Some Navision setups send back illegal XML characters inside a field (e.g. a stray ```&#x1F;```), which would normally cause ```XDocument.Parse``` to throw and break the entire response.
+
+The library now detects this case, strips illegal XML characters (whether they appear as raw control characters or as numeric character references such as ```&#x1F;``` / ```&#31;```) from the response, and retries parsing once. A warning is logged with the offending line/position and surrounding XML context, so you can see what was removed. Valid content, including normal entities and character references, is left untouched. Character references inside ```CDATA``` sections and comments are also left untouched, since a parser never interprets them as references there anyway; raw illegal control characters are still stripped everywhere, including inside ```CDATA```, since those remain illegal regardless of context.
+
+If the response is still not valid XML after sanitization (e.g. it's structurally broken, not just containing illegal characters), the retry's parse error is logged and thrown, with the original parse failure attached as its ```InnerException```.
