@@ -1,6 +1,9 @@
-﻿namespace EasySoapClient.Interfaces;
+namespace EasySoapClient.Interfaces;
 
-public interface IUpdatableWebServiceElement : IWebServiceElement
+/// <summary>
+/// A page model that can be updated. Kept for backwards compatibility;
+/// equivalent to <see cref="IKeyedWebServiceElement"/>.
+/// </summary>
+public interface IUpdatableWebServiceElement : IKeyedWebServiceElement
 {
-    string Key { get; set; }
 }

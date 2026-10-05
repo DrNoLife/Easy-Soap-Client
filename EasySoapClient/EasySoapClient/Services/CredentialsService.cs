@@ -1,32 +1,29 @@
-﻿using EasySoapClient.Interfaces;
-using EasySoapClient.Models;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Options;
 using System.Text;
+using EasySoapClient.Interfaces;
+using EasySoapClient.Models;
+using Microsoft.Extensions.Options;
 
 namespace EasySoapClient.Services;
 
-public class CredentialsService : ICredentialsProvider
+/// <summary>
+/// Default <see cref="ICredentialsProvider"/>: reads the named options on every call, so configuration reloads apply.
+/// </summary>
+internal sealed class CredentialsService(IOptionsMonitor<EasySoapClientOptions> optionsMonitor, string optionsName) : ICredentialsProvider
 {
-    private readonly string _username;
-    private readonly string _password;
-
-    public CredentialsService(
-        IOptionsMonitor<EasySoapClientOptions> optionsMonitor,
-        [ServiceKey] string? serviceKey = null)
-    {
-        var options = serviceKey is not null
-            ? optionsMonitor.Get(serviceKey) // Keyed configuration.
-            : optionsMonitor.CurrentValue;   // Non-keyed (default) configuration.
-
-        _username = options.Username ?? throw new ArgumentNullException(nameof(options.Username), "Username cannot be null.");
-        _password = options.Password ?? throw new ArgumentNullException(nameof(options.Password), "Password cannot be null.");
-    }
-
-    public string Username => _username;
-    public string Password => _password;
+    private readonly IOptionsMonitor<EasySoapClientOptions> _optionsMonitor = optionsMonitor;
+    private readonly string _optionsName = optionsName;
 
     public string GenerateBase64Credentials()
-        => Convert.ToBase64String(Encoding.ASCII.GetBytes($"{Username}:{Password}"));
-}
+    {
+        EasySoapClientOptions options = _optionsMonitor.Get(_optionsName);
 
+        // Checked here rather than in options validation, so a custom ICredentialsProvider works without a Username.
+        if (String.IsNullOrEmpty(options.Username))
+        {
+            string client = String.IsNullOrEmpty(_optionsName) ? "EasySoapClient" : $"EasySoapClient '{_optionsName}'";
+            throw new InvalidOperationException($"{client}: Username is required for Basic authentication (or register a custom {nameof(ICredentialsProvider)}).");
+        }
+
+        return Convert.ToBase64String(Encoding.UTF8.GetBytes($"{options.Username}:{options.Password}"));
+    }
+}
