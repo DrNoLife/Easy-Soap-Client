@@ -1,0 +1,111 @@
+name: CI
+
+# Every push and pull request is built and tested.
+# A push to main whose package version is not yet on nuget.org is also published there
+# (via Trusted Publishing, no stored API key) and gets a GitHub release with a v<version> tag.
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # The SDK comes from global.json; the 8.0 runtime is needed to run the net8.0 tests.
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+          dotnet-version: 8.0.x
+
+      - name: Restore
+        run: dotnet restore EasySoapClient/EasySoapClient.Tests/EasySoapClient.Tests.csproj
+
+      - name: Build
+        run: dotnet build EasySoapClient/EasySoapClient.Tests/EasySoapClient.Tests.csproj -c Release --no-restore
+
+      - name: Test
+        run: dotnet test EasySoapClient/EasySoapClient.Tests/EasySoapClient.Tests.csproj -c Release --no-build
+
+      - name: Pack
+        run: dotnet pack EasySoapClient/EasySoapClient/EasySoapClient.csproj -c Release -o artifacts
+
+      - name: Read package version
+        id: version
+        run: echo "version=$(dotnet msbuild EasySoapClient/EasySoapClient/EasySoapClient.csproj -getProperty:Version)" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nuget
+          path: artifacts/*
+
+  publish:
+    needs: build
+    # Only pushes to main in this repository (not pull requests or forks).
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && github.repository == 'DrNoLife/Easy-Soap-Client'
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write   # Trusted Publishing: exchange the GitHub OIDC token for a temporary nuget.org API key
+      contents: write   # create the GitHub release and tag
+    env:
+      VERSION: ${{ needs.build.outputs.version }}
+    steps:
+      - name: Is this version already on nuget.org?
+        id: check
+        run: |
+          if curl -sf "https://api.nuget.org/v3-flatcontainer/easysoapclient/index.json" | grep -qi "\"${VERSION}\""; then
+            echo "published=true" >> "$GITHUB_OUTPUT"
+            echo "::notice::EasySoapClient ${VERSION} is already on nuget.org. Bump <Version> in EasySoapClient.csproj to publish a new release."
+          else
+            echo "published=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/download-artifact@v4
+        if: steps.check.outputs.published == 'false'
+        with:
+          name: nuget
+          path: artifacts
+
+      - uses: actions/setup-dotnet@v4
+        if: steps.check.outputs.published == 'false'
+        with:
+          dotnet-version: 10.0.x
+
+      - name: NuGet login (OIDC → temporary API key)
+        if: steps.check.outputs.published == 'false'
+        uses: NuGet/login@v1
+        id: login
+        with:
+          user: ${{ secrets.NUGET_USER }}
+
+      # The matching .snupkg (symbols) next to the .nupkg is pushed automatically.
+      - name: Push to nuget.org
+        if: steps.check.outputs.published == 'false'
+        env:
+          NUGET_API_KEY: ${{ steps.login.outputs.NUGET_API_KEY }}
+        run: dotnet nuget push "artifacts/*.nupkg" --api-key "$NUGET_API_KEY" --source https://api.nuget.org/v3/index.json --skip-duplicate
+
+      - name: Create GitHub release
+        if: steps.check.outputs.published == 'false'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if gh release view "v${VERSION}" --repo "$GITHUB_REPOSITORY" > /dev/null 2>&1; then
+            echo "Release v${VERSION} already exists."
+          else
+            gh release create "v${VERSION}" artifacts/* --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --title "v${VERSION}" --generate-notes
+          fi
