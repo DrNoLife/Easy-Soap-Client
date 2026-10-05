@@ -1,6 +1,6 @@
 namespace EasySoapClient.Interfaces;
 
-public interface IXmlSanitizerService
+internal interface IXmlSanitizerService
 {
     /// <summary>
     /// Removes characters that are illegal in XML 1.0 from the given string,

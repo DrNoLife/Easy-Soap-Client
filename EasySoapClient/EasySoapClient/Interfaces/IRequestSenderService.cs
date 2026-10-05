@@ -1,18 +1,15 @@
-﻿using EasySoapClient.Contracts.CodeUnit;
-using EasySoapClient.Enums;
-
 namespace EasySoapClient.Interfaces;
 
-public interface IRequestSenderService
+internal interface IRequestSenderService
 {
-    Task<string> SendWebServiceSoapRequestAsync(
-        CallMethod soapMethod, 
-        string soapEnvelope, 
-        IWebServiceElement instance, 
-        CancellationToken cancellationToken = default);
-
-    Task<string> SendCodeUnitSoapRequestAsync(
-        CodeUnitRequest request, 
+    /// <summary>
+    /// Posts the envelope and hands the (buffered, seekable) response body to <paramref name="parse"/>
+    /// before the response is disposed.
+    /// </summary>
+    Task<TResult> SendAsync<TResult>(
+        string relativeUrl,
+        string soapAction,
         string soapEnvelope,
-        CancellationToken cancellationToken = default);
+        Func<Stream, TResult> parse,
+        CancellationToken cancellationToken);
 }

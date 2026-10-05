@@ -1,16 +1,14 @@
-﻿using EasySoapClient.Models.Responses;
+using EasySoapClient.Models.Responses;
 
 namespace EasySoapClient.Interfaces;
 
-public interface IParsingService
+internal interface IParsingService
 {
-    List<T> ParseSoapResponseList<T>(string result, IWebServiceElement instance) 
-        where T : IWebServiceElement, new();
+    List<T> ParseList<T>(Stream response, string elementName, string xmlNamespace);
 
-    T ParseSoapResponseSingle<T>(string result, IWebServiceElement instance) 
-        where T : IWebServiceElement, new();
+    (bool Found, T? Value) ParseSingle<T>(Stream response, string elementName, string xmlNamespace);
 
-    string ParseIdFromKey<T>(string result);
+    string? ParseResultValue(Stream response, string resultElementName);
 
-    CodeUnitResponse ParseCodeUnitResponse(string response);
+    CodeUnitResponse ParseCodeUnitResponse(Stream response);
 }
