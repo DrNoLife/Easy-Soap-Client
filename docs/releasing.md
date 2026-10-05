@@ -23,8 +23,6 @@ GitHub's OIDC token is exchanged for a temporary API key, so no API key is store
    - Repository: `Easy-Soap-Client`
    - Workflow File: `ci.yml` (file name only)
    - Environment: leave empty
-2. **GitHub**: repository → Settings → Secrets and variables → Actions → New repository secret
-   - Name: `NUGET_USER`
-   - Value: `ThorChristiansen` (the nuget.org profile name, not the e-mail address)
+2. Nothing to set up in GitHub: the nuget.org user name (`ThorChristiansen`) is in the workflow, and no API key is stored.
 
 If the repository is private, nuget.org activates the policy only temporarily (7 days) until the first successful publish.
